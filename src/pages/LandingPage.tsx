@@ -1,25 +1,44 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Trophy, Users, Star, Target, Zap } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Heart, 
+  Trophy, 
+  Users, 
+  Star, 
+  Target, 
+  Zap, 
+  Scale, 
+  TrendingUp, 
+  Award, 
+  Play,
+  ArrowRight,
+  CheckCircle,
+  Sparkles,
+  Activity,
+  Brain,
+  Shield
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTopUsers } from "@/hooks/useTopUsers";
 
 const LandingPage = () => {
   const { users: topUsers, loading: usersLoading, error: usersError } = useTopUsers(5);
 
-  // Debug: Log dos dados
-  console.log('Top Users:', topUsers);
-  console.log('Loading:', usersLoading);
-  console.log('Error:', usersError);
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header */}
-      <header className="border-b border-border/20 bg-card/50 backdrop-blur-sm">
+      <header className="border-b border-border/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Instituto dos Sonhos</h1>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Heart className="h-8 w-8 text-primary animate-pulse" />
+              <Sparkles className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Instituto dos Sonhos</h1>
+              <p className="text-xs text-muted-foreground">Transformação Real</p>
+            </div>
           </div>
           <div className="flex gap-3">
             <Link to="/auth">
@@ -28,8 +47,8 @@ const LandingPage = () => {
               </Button>
             </Link>
             <Link to="/auth">
-              <Button className="bg-primary hover:bg-primary/90">
-                Criar Conta
+              <Button className="bg-primary hover:bg-primary/90 shadow-lg">
+                Começar Agora
               </Button>
             </Link>
           </div>
@@ -37,10 +56,16 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center">
+      <section className="py-20 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-secondary/10"></div>
+        <div className="container mx-auto text-center relative z-10">
+          <Badge className="mb-6 bg-primary/20 text-primary border-primary/30">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Metodologia Comprovada
+          </Badge>
+          
           <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-up">
-            <span className="bg-gradient-primary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               Transforme sua vida
             </span>
             <br />
@@ -48,155 +73,248 @@ const LandingPage = () => {
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-up">
-            Metodologia comprovada para emagrecimento saudável
+            Plataforma completa de saúde e bem-estar com gamificação, 
+            <br className="hidden md:block" />
+            <span className="text-primary font-semibold">integração com balança inteligente</span> e análise preditiva
           </p>
           
-          <Link to="/auth">
-            <Button 
-              size="lg" 
-              className="text-xl px-12 py-6 bg-primary hover:bg-primary/90 shadow-glow animate-scale-in"
-            >
-              ENTRAR NO INSTITUTO
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-16 px-4 bg-card/30">
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">Por que escolher o Instituto?</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="health-card text-center">
-              <CardContent className="pt-6">
-                <Target className="h-16 w-16 text-primary mx-auto mb-4" />
-                <h3 className="text-2xl font-bold mb-4">Metodologia Comprovada</h3>
-                <p className="text-muted-foreground">
-                  Sistema científico desenvolvido para resultados reais e duradouros
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="health-card text-center">
-              <CardContent className="pt-6">
-                <Users className="h-16 w-16 text-secondary mx-auto mb-4" />
-                <h3 className="text-2xl font-bold mb-4">Comunidade Ativa</h3>
-                <p className="text-muted-foreground">
-                  Apoio de milhares de pessoas em jornadas semelhantes à sua
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="health-card text-center">
-              <CardContent className="pt-6">
-                <Zap className="h-16 w-16 text-accent mx-auto mb-4" />
-                <h3 className="text-2xl font-bold mb-4">Resultados Rápidos</h3>
-                <p className="text-muted-foreground">
-                  Primeiros resultados visíveis já na primeira semana
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Numbers Section */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-12">Números que comprovam nossa eficácia</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="stat-card">
-              <div className="text-4xl font-bold text-primary mb-2">5.000+</div>
-              <div className="text-muted-foreground">Vidas transformadas</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="text-4xl font-bold text-secondary mb-2">30</div>
-              <div className="text-muted-foreground">Dias para ver resultados</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="text-4xl font-bold text-accent mb-2">98%</div>
-              <div className="text-muted-foreground">Taxa de sucesso</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Ranking Section */}
-      <section className="py-16 px-4 bg-card/30">
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">Top 5 Usuários Mais Ativos</h2>
-          
-          <div className="max-w-2xl mx-auto space-y-4">
-            {usersLoading ? (
-              // Loading skeleton
-              Array.from({ length: 5 }).map((_, index) => (
-                <Card key={index} className="mission-card animate-pulse">
-                  <CardContent className="py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-muted rounded-full"></div>
-                      <div>
-                        <div className="h-4 bg-muted rounded w-24 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-16"></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              topUsers.map((user) => (
-              <Card key={user.position} className="mission-card">
-                <CardContent className="py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                      user.position === 1 ? 'bg-yellow-500' :
-                      user.position === 2 ? 'bg-gray-400' :
-                      user.position === 3 ? 'bg-amber-600' : 'bg-muted'
-                    }`}>
-                      {user.position}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">{user.name}</h4>
-                      <p className="text-sm text-muted-foreground">{user.points} pontos</p>
-                    </div>
-                  </div>
-                  {user.position <= 3 && <Trophy className="h-5 w-5 text-primary" />}
-                </CardContent>
-              </Card>
-            ))
-            )}
-          </div>
-          
-          <div className="text-center mt-8">
-            <Link to="/ranking">
-              <Button variant="outline" className="hover:bg-muted">
-                Ver Ranking Completo
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+            <Link to="/auth">
+              <Button 
+                size="lg" 
+                className="text-xl px-12 py-6 bg-primary hover:bg-primary/90 shadow-glow animate-scale-in"
+              >
+                <Play className="mr-2 h-5 w-5" />
+                COMEÇAR JORNADA
               </Button>
             </Link>
+            <Link to="/app/scale-test">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-xl px-8 py-6 border-2 hover:bg-muted"
+              >
+                <Scale className="mr-2 h-5 w-5" />
+                Testar Balança
+              </Button>
+            </Link>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary">10k+</div>
+              <div className="text-sm text-muted-foreground">Usuários Ativos</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-secondary">95%</div>
+              <div className="text-sm text-muted-foreground">Taxa de Sucesso</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-accent">30</div>
+              <div className="text-sm text-muted-foreground">Dias para Resultados</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-green-500">24/7</div>
+              <div className="text-sm text-muted-foreground">Suporte Disponível</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 px-4 bg-card/30">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Por que escolher o Instituto?</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Tecnologia de ponta combinada com metodologia científica para resultados reais
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="health-card hover:shadow-xl transition-all duration-300">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-primary/20 rounded-lg">
+                    <Target className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold">Metodologia Científica</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Sistema baseado em evidências científicas para emagrecimento saudável e duradouro
+                </p>
+                <div className="flex items-center text-sm text-primary">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Comprovado por especialistas
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="health-card hover:shadow-xl transition-all duration-300">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-secondary/20 rounded-lg">
+                    <Scale className="h-8 w-8 text-secondary" />
+                  </div>
+                  <h3 className="text-xl font-bold">Balança Inteligente</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Integração com Xiaomi Scale 2 para medições precisas e análise corporal completa
+                </p>
+                <div className="flex items-center text-sm text-secondary">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Sincronização automática
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="health-card hover:shadow-xl transition-all duration-300">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-accent/20 rounded-lg">
+                    <TrendingUp className="h-8 w-8 text-accent" />
+                  </div>
+                  <h3 className="text-xl font-bold">Análise Preditiva</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  IA avançada que prevê seu progresso e sugere otimizações personalizadas
+                </p>
+                <div className="flex items-center text-sm text-accent">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Recomendações inteligentes
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="health-card hover:shadow-xl transition-all duration-300">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-green-500/20 rounded-lg">
+                    <Award className="h-8 w-8 text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-bold">Gamificação</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Sistema de conquistas e pontuação que torna sua jornada divertida e motivadora
+                </p>
+                <div className="flex items-center text-sm text-green-500">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Progresso gamificado
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="health-card hover:shadow-xl transition-all duration-300">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-purple-500/20 rounded-lg">
+                    <Brain className="h-8 w-8 text-purple-500" />
+                  </div>
+                  <h3 className="text-xl font-bold">Psicologia Positiva</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Abordagem focada em bem-estar mental e mudança de hábitos sustentável
+                </p>
+                <div className="flex items-center text-sm text-purple-500">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Mindset transformador
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="health-card hover:shadow-xl transition-all duration-300">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-blue-500/20 rounded-lg">
+                    <Shield className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <h3 className="text-xl font-bold">Privacidade Total</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Seus dados são protegidos com criptografia de ponta e nunca compartilhados
+                </p>
+                <div className="flex items-center text-sm text-blue-500">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Dados seguros
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Como Funciona?</h2>
+            <p className="text-xl text-muted-foreground">
+              Três passos simples para transformar sua vida
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary">1</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Cadastre-se</h3>
+              <p className="text-muted-foreground">
+                Crie sua conta gratuitamente e configure seu perfil inicial
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-secondary">2</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Conecte sua Balança</h3>
+              <p className="text-muted-foreground">
+                Sincronize sua Xiaomi Scale 2 para medições automáticas
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-accent">3</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Acompanhe o Progresso</h3>
+              <p className="text-muted-foreground">
+                Visualize sua evolução com gráficos e análises detalhadas
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">Pronto para transformar sua vida?</h2>
+          <h2 className="text-4xl font-bold mb-6">
+            Pronto para transformar sua vida?
+          </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Junte-se a milhares de pessoas que já conseguiram seus objetivos
+            Junte-se a milhares de pessoas que já transformaram suas vidas com o Instituto dos Sonhos
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link to="/auth">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-glow">
-                ENTRAR NO INSTITUTO
+              <Button 
+                size="lg" 
+                className="text-xl px-12 py-6 bg-primary hover:bg-primary/90 shadow-glow"
+              >
+                Começar Agora
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/courses">
-              <Button size="lg" variant="outline" className="hover:bg-muted">
-                CURSOS PREMIUM
+            <Link to="/app/scale-test">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-xl px-8 py-6 border-2"
+              >
+                Testar Balança
               </Button>
             </Link>
           </div>
@@ -204,49 +322,15 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/20 bg-card/50 py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Heart className="h-6 w-6 text-primary" />
-                <h3 className="text-lg font-bold">Instituto dos Sonhos</h3>
-              </div>
-              <p className="text-muted-foreground">
-                Transformando vidas através do emagrecimento saudável
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Navegação</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><Link to="/ranking" className="hover:text-primary">Ranking</Link></li>
-                <li><Link to="/courses" className="hover:text-primary">Cursos</Link></li>
-                <li><Link to="/about" className="hover:text-primary">Sobre</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Contato</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>contato@institutodossonhos.com</li>
-                <li>(11) 99999-9999</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Redes Sociais</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-primary">Instagram</a></li>
-                <li><a href="#" className="hover:text-primary">Facebook</a></li>
-                <li><a href="#" className="hover:text-primary">YouTube</a></li>
-              </ul>
-            </div>
+      <footer className="py-8 px-4 border-t border-border/20">
+        <div className="container mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Heart className="h-6 w-6 text-primary" />
+            <span className="text-lg font-semibold">Instituto dos Sonhos</span>
           </div>
-          
-          <div className="mt-8 pt-8 border-t border-border/20 text-center text-muted-foreground">
-            <p>&copy; 2024 Instituto dos Sonhos. Todos os direitos reservados.</p>
-          </div>
+          <p className="text-muted-foreground">
+            Transformando vidas através da tecnologia e ciência
+          </p>
         </div>
       </footer>
     </div>
