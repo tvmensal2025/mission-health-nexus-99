@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Target, Trophy, TrendingUp, Heart, Droplets, Zap, Moon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar, Target, Trophy, TrendingUp, Heart, Droplets, Zap, Moon, Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { XiaomiScaleIntegration } from "@/components/weighing/XiaomiScaleIntegration";
 
 interface Profile {
   id: string;
@@ -22,6 +24,7 @@ interface DashboardOverviewProps {
 const DashboardOverview = ({ user }: DashboardOverviewProps) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -220,9 +223,29 @@ const DashboardOverview = ({ user }: DashboardOverviewProps) => {
           <CardContent>
             <div className="text-center py-8">
               <p className="text-muted-foreground">Gráfico de evolução será exibido aqui</p>
-              <Button variant="outline" className="mt-4">
-                Registrar Nova Pesagem
-              </Button>
+              <Dialog open={isScaleModalOpen} onOpenChange={setIsScaleModalOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="mt-4">
+                    Registrar Nova Pesagem
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Scale className="h-5 w-5" />
+                      Balança Inteligente
+                    </DialogTitle>
+                  </DialogHeader>
+                  <XiaomiScaleIntegration 
+                    user={user}
+                    onDataReceived={(data) => {
+                      console.log('Dados da balança recebidos:', data);
+                      setIsScaleModalOpen(false);
+                      fetchProfile();
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>

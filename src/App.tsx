@@ -12,6 +12,7 @@ import CompleteDashboardPage from "./pages/CompleteDashboardPage";
 import AdminPage from "./pages/AdminPage";
 import CoursePlatform from "./components/CoursePlatform";
 import MissionSystem from "./components/MissionSystem";
+import ProgressPage from "./pages/ProgressPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,7 +50,7 @@ const App = () => (
             <Route path="challenges" element={<div className="p-6"><h1 className="text-2xl font-bold">Desafios</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />
             <Route path="diary" element={<div className="p-6"><h1 className="text-2xl font-bold">Diário de Saúde</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />
             <Route path="saboteur-test" element={<div className="p-6"><h1 className="text-2xl font-bold">Teste de Sabotadores</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />
-            <Route path="progress" element={<div className="p-6"><h1 className="text-2xl font-bold">Meu Progresso</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />
+            <Route path="progress" element={<ProgressPage />} />
             <Route path="analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Análise Avançada</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />
             <Route path="google-fit" element={<div className="p-6"><h1 className="text-2xl font-bold">Google Fit</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />
             <Route path="scale-test" element={<div className="p-6"><h1 className="text-2xl font-bold">Teste Xiaomi Mi Body Scale 2</h1><p className="text-muted-foreground">Em desenvolvimento...</p></div>} />

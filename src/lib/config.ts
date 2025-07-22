@@ -26,11 +26,21 @@ export const config = {
     timeout: 10000
   },
   
+  // OpenAI Configuration
+  openai: {
+    apiKey: import.meta.env.VITE_OPENAI_API_KEY || "",
+    baseURL: import.meta.env.VITE_OPENAI_BASE_URL || "https://api.openai.com/v1",
+    model: import.meta.env.VITE_OPENAI_MODEL || "gpt-3.5-turbo",
+    maxTokens: parseInt(import.meta.env.VITE_OPENAI_MAX_TOKENS || "1000"),
+    temperature: parseFloat(import.meta.env.VITE_OPENAI_TEMPERATURE || "0.7")
+  },
+  
   // Feature Flags
   features: {
     enableAnalytics: import.meta.env.VITE_ENABLE_ANALYTICS === "true",
     enableDebugMode: import.meta.env.VITE_DEBUG_MODE === "true",
-    enableNotifications: import.meta.env.VITE_ENABLE_NOTIFICATIONS !== "false"
+    enableNotifications: import.meta.env.VITE_ENABLE_NOTIFICATIONS !== "false",
+    enableGPTAssistant: import.meta.env.VITE_ENABLE_GPT_ASSISTANT === "true"
   }
 } as const;
 

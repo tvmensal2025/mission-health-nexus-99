@@ -26,6 +26,7 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { WeighingMonitoring } from "@/components/admin/WeighingMonitoring";
 import { AdvancedReports } from "@/components/admin/AdvancedReports";
+import { CourseManagement } from "@/components/admin/CourseManagement";
 
 const AdminPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -147,7 +148,7 @@ const AdminPage = () => {
       case 'reports':
         return <AdvancedReports />;
       case 'courses':
-        return <div className="text-center py-8 text-muted-foreground">Gestão de Cursos em desenvolvimento...</div>;
+        return <CourseManagement />;
       case 'sessions':
         return <div className="text-center py-8 text-muted-foreground">Gestão de Sessões em desenvolvimento...</div>;
       case 'devices':

@@ -2,8 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Trophy, Users, Star, Target, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTopUsers } from "@/hooks/useTopUsers";
 
 const LandingPage = () => {
+  const { users: topUsers, loading: usersLoading, error: usersError } = useTopUsers(5);
+
+  // Debug: Log dos dados
+  console.log('Top Users:', topUsers);
+  console.log('Loading:', usersLoading);
+  console.log('Error:', usersError);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -123,13 +131,23 @@ const LandingPage = () => {
           <h2 className="text-4xl font-bold text-center mb-12">Top 5 Usuários Mais Ativos</h2>
           
           <div className="max-w-2xl mx-auto space-y-4">
-            {[
-              { name: "Maria Silva", points: 2850, position: 1 },
-              { name: "João Santos", points: 2720, position: 2 },
-              { name: "Ana Costa", points: 2650, position: 3 },
-              { name: "Pedro Lima", points: 2480, position: 4 },
-              { name: "Carla Mendes", points: 2350, position: 5 },
-            ].map((user) => (
+            {usersLoading ? (
+              // Loading skeleton
+              Array.from({ length: 5 }).map((_, index) => (
+                <Card key={index} className="mission-card animate-pulse">
+                  <CardContent className="py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 bg-muted rounded-full"></div>
+                      <div>
+                        <div className="h-4 bg-muted rounded w-24 mb-2"></div>
+                        <div className="h-3 bg-muted rounded w-16"></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              topUsers.map((user) => (
               <Card key={user.position} className="mission-card">
                 <CardContent className="py-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -148,7 +166,8 @@ const LandingPage = () => {
                   {user.position <= 3 && <Trophy className="h-5 w-5 text-primary" />}
                 </CardContent>
               </Card>
-            ))}
+            ))
+            )}
           </div>
           
           <div className="text-center mt-8">
