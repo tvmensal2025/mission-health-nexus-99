@@ -1,414 +1,610 @@
 import React, { useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Play, Clock, Users, Star, BookOpen, Award, 
-  ChevronRight, Search, Filter, Grid, List
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Mock course data
-const courses = [
-  {
-    id: 1,
-    title: "Fundamentos da Saúde",
-    category: "Saúde Básica",
-    instructor: "Dr. Ana Silva",
-    duration: "2h 30min",
-    progress: 75,
-    rating: 4.8,
-    students: 1250,
-    thumbnail: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=225&fit=crop",
-    description: "Aprenda os conceitos fundamentais para uma vida saudável e equilibrada.",
-    episodes: [
-      { id: 1, title: "Introdução à Saúde", duration: "15min", completed: true },
-      { id: 2, title: "Nutrição Básica", duration: "20min", completed: true },
-      { id: 3, title: "Exercícios Essenciais", duration: "25min", completed: false },
-      { id: 4, title: "Sono e Recuperação", duration: "18min", completed: false }
-    ]
-  },
-  {
-    id: 2,
-    title: "Emagrecimento Sustentável",
-    category: "Emagrecimento",
-    instructor: "Dra. Maria Santos",
-    duration: "3h 45min",
-    progress: 45,
-    rating: 4.9,
-    students: 890,
-    thumbnail: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=225&fit=crop",
-    description: "Estratégias científicas para perder peso de forma saudável e duradoura.",
-    episodes: [
-      { id: 1, title: "Mitos e Verdades", duration: "18min", completed: true },
-      { id: 2, title: "Déficit Calórico", duration: "25min", completed: false },
-      { id: 3, title: "Exercícios para Queima", duration: "30min", completed: false }
-    ]
-  },
-  {
-    id: 3,
-    title: "Mindfulness e Bem-estar",
-    category: "Saúde Mental",
-    instructor: "Prof. Carlos Lima",
-    duration: "1h 45min",
-    progress: 0,
-    rating: 4.7,
-    students: 2100,
-    thumbnail: "https://images.unsplash.com/photo-1506126613408-eca07ce68e71?w=400&h=225&fit=crop",
-    description: "Técnicas de meditação e mindfulness para reduzir o estresse.",
-    episodes: [
-      { id: 1, title: "O que é Mindfulness", duration: "12min", completed: false },
-      { id: 2, title: "Respiração Consciente", duration: "15min", completed: false },
-      { id: 3, title: "Meditação Guiada", duration: "20min", completed: false }
-    ]
-  },
-  {
-    id: 4,
-    title: "Nutrição Avançada",
-    category: "Nutrição",
-    instructor: "Dra. Fernanda Costa",
-    duration: "4h 20min",
-    progress: 20,
-    rating: 4.8,
-    students: 756,
-    thumbnail: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=225&fit=crop",
-    description: "Aprofunde seus conhecimentos em nutrição e planejamento alimentar.",
-    episodes: [
-      { id: 1, title: "Macronutrientes", duration: "22min", completed: true },
-      { id: 2, title: "Micronutrientes", duration: "18min", completed: false },
-      { id: 3, title: "Timing Nutricional", duration: "25min", completed: false }
-    ]
-  },
-  {
-    id: 5,
-    title: "Treino Funcional",
-    category: "Exercício",
-    instructor: "Prof. Roberto Alves",
-    duration: "2h 15min",
-    progress: 0,
-    rating: 4.6,
-    students: 1890,
-    thumbnail: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=225&fit=crop",
-    description: "Exercícios funcionais para melhorar força, flexibilidade e coordenação.",
-    episodes: [
-      { id: 1, title: "Aquecimento Dinâmico", duration: "10min", completed: false },
-      { id: 2, title: "Exercícios de Core", duration: "20min", completed: false },
-      { id: 3, title: "Treino Completo", duration: "30min", completed: false }
-    ]
-  },
-  {
-    id: 6,
-    title: "Sono e Recuperação",
-    category: "Recuperação",
-    instructor: "Dr. João Pereira",
-    duration: "1h 30min",
-    progress: 100,
-    rating: 4.9,
-    students: 1456,
-    thumbnail: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=225&fit=crop",
-    description: "Otimize seu sono para melhor recuperação e performance.",
-    episodes: [
-      { id: 1, title: "Ciclos do Sono", duration: "15min", completed: true },
-      { id: 2, title: "Higiene do Sono", duration: "18min", completed: true },
-      { id: 3, title: "Técnicas de Relaxamento", duration: "12min", completed: true }
-    ]
-  }
-];
+  Play, 
+  Clock, 
+  Users, 
+  Star, 
+  ChevronLeft, 
+  ChevronRight,
+  X,
+  CheckCircle
+} from "lucide-react";
 
 interface Course {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  category: string;
-  instructor: string;
-  duration: string;
+  thumbnail: string;
+  duration: number;
   students: number;
   rating: number;
-  thumbnail: string;
-  progress: number;
-  episodes?: { id: number; title: string; duration: string; completed: boolean; }[];
+  price: number;
+  isFree: boolean;
+  module: string;
+  lessonCount: number;
 }
 
-const categories = ["Todos", "Saúde Básica", "Emagrecimento", "Saúde Mental", "Nutrição", "Exercício", "Recuperação"];
+interface Lesson {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  duration: number;
+  videoUrl: string;
+  videoType: 'youtube' | 'vimeo' | 'panda' | 'upload';
+  isCompleted: boolean;
+}
 
-const CourseCard = ({ course, viewMode }: { course: Course; viewMode: 'grid' | 'list' }) => {
-  if (viewMode === 'list') {
-    return (
-      <Card className="health-card flex flex-row">
-        <div className="w-48 h-32 relative overflow-hidden rounded-l-2xl">
-          <img 
-            src={course.thumbnail} 
-            alt={course.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-            <Play className="w-8 h-8 text-white" />
-          </div>
-        </div>
-        
-        <div className="flex-1 p-6">
-          <div className="flex justify-between items-start mb-2">
-            <Badge variant="secondary" className="mb-2">{course.category}</Badge>
-            <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span>{course.rating}</span>
-            </div>
-          </div>
-          
-          <h3 className="text-xl font-semibold text-foreground mb-2">{course.title}</h3>
-          <p className="text-muted-foreground text-sm mb-3">{course.description}</p>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <Clock className="w-4 h-4" />
-                <span>{course.duration}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4" />
-                <span>{course.students}</span>
-              </div>
-              <span>por {course.instructor}</span>
-            </div>
-            
-            <Button variant="gradient">
-              {course.progress > 0 ? 'Continuar' : 'Começar'}
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-          
-          {course.progress > 0 && (
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Progresso</span>
-                <span>{course.progress}%</span>
-              </div>
-              <Progress value={course.progress} className="h-2" />
-            </div>
-          )}
-        </div>
-      </Card>
-    );
-  }
+interface Module {
+  id: string;
+  title: string;
+  courses: Course[];
+}
 
-  return (
-    <Card className="health-card group cursor-pointer">
-      <div className="relative overflow-hidden rounded-t-2xl">
-        <img 
-          src={course.thumbnail} 
-          alt={course.title}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <Play className="w-12 h-12 text-white" />
-        </div>
-        
-        {/* Progress overlay */}
-        {course.progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
-            <div className="flex justify-between text-white text-xs mb-1">
-              <span>Progresso</span>
-              <span>{course.progress}%</span>
-            </div>
-            <Progress value={course.progress} className="h-1" />
-          </div>
-        )}
-      </div>
-      
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start mb-2">
-          <Badge variant="secondary">{course.category}</Badge>
-          <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span>{course.rating}</span>
-          </div>
-        </div>
-        <CardTitle className="text-lg group-hover:text-primary transition-colors">
-          {course.title}
-        </CardTitle>
-        <CardDescription className="text-sm">
-          {course.description}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-          <div className="flex items-center space-x-1">
-            <Clock className="w-4 h-4" />
-            <span>{course.duration}</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Users className="w-4 h-4" />
-            <span>{course.students}</span>
-          </div>
-        </div>
-        
-        <p className="text-xs text-muted-foreground mb-3">por {course.instructor}</p>
-        
-        <Button className="w-full bg-gradient-primary hover:opacity-90">
-          {course.progress > 0 ? 'Continuar Curso' : 'Começar Curso'}
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
-      </CardContent>
-    </Card>
-  );
-};
+interface CoursePlatformProps {
+  viewMode: 'courses' | 'modules';
+}
 
-export default function CoursePlatform() {
+export const CoursePlatform: React.FC<CoursePlatformProps> = ({ viewMode = 'courses' }) => {
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'Todos' || course.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Mock data - Módulos organizados
+  const mockModules: Module[] = [
+    {
+      id: '1',
+      title: 'MÓDULO 1: FUNDAMENTOS',
+      courses: [
+        {
+          id: '1',
+          title: '7 CHAVES',
+          description: 'Fundamentos essenciais para sua transformação',
+          thumbnail: 'https://via.placeholder.com/320x480/6366f1/ffffff?text=7+CHAVES',
+          duration: 60,
+          students: 15420,
+          rating: 4.8,
+          price: 0,
+          isFree: true,
+          module: 'fundamentos',
+          lessonCount: 4
+        },
+        {
+          id: '2',
+          title: '12 CHÁS',
+          description: 'Chás medicinais para saúde e bem-estar',
+          thumbnail: 'https://via.placeholder.com/320x480/8b5cf6/ffffff?text=12+CHAS',
+          duration: 45,
+          students: 8920,
+          rating: 4.9,
+          price: 0,
+          isFree: true,
+          module: 'fundamentos',
+          lessonCount: 4
+        },
+        {
+          id: '3',
+          title: 'PÍLULAS DO BEM',
+          description: 'Suplementação natural e eficaz',
+          thumbnail: 'https://via.placeholder.com/320x480/a855f7/ffffff?text=PILULAS+DO+BEM',
+          duration: 90,
+          students: 12340,
+          rating: 4.7,
+          price: 0,
+          isFree: true,
+          module: 'fundamentos',
+          lessonCount: 4
+        }
+      ]
+    },
+    {
+      id: '2',
+      title: 'MÓDULO 2: NUTRIÇÃO',
+      courses: [
+        {
+          id: '4',
+          title: 'JEJUM INTERMITENTE',
+          description: 'Guia completo do jejum intermitente',
+          thumbnail: 'https://via.placeholder.com/320x480/ec4899/ffffff?text=JEJUM+INTERMITENTE',
+          duration: 120,
+          students: 9870,
+          rating: 4.6,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        },
+        {
+          id: '5',
+          title: 'DIA A DIA',
+          description: 'Rotina diária para uma vida saudável',
+          thumbnail: '/api/placeholder/320/480/5',
+          duration: 75,
+          students: 7560,
+          rating: 4.8,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        },
+        {
+          id: '6',
+          title: 'DOCES KIDS!',
+          description: 'Receitas doces saudáveis para crianças',
+          thumbnail: '/api/placeholder/320/480/6',
+          duration: 60,
+          students: 5430,
+          rating: 4.9,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        },
+        {
+          id: '7',
+          title: 'ZERO LACTOSE',
+          description: 'Alimentação sem lactose',
+          thumbnail: '/api/placeholder/320/480/7',
+          duration: 80,
+          students: 4320,
+          rating: 4.7,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        },
+        {
+          id: '8',
+          title: 'DIABÉTICOS',
+          description: 'Nutrição para diabéticos',
+          thumbnail: '/api/placeholder/320/480/8',
+          duration: 90,
+          students: 3210,
+          rating: 4.8,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        },
+        {
+          id: '9',
+          title: 'LOW CARB',
+          description: 'Dieta low carb eficaz',
+          thumbnail: '/api/placeholder/320/480/9',
+          duration: 100,
+          students: 6540,
+          rating: 4.6,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        },
+        {
+          id: '10',
+          title: 'ZERO GLÚTEN',
+          description: 'Vida sem glúten',
+          thumbnail: '/api/placeholder/320/480/10',
+          duration: 70,
+          students: 5430,
+          rating: 4.9,
+          price: 0,
+          isFree: true,
+          module: 'nutricao',
+          lessonCount: 4
+        }
+      ]
+    },
+    {
+      id: '3',
+      title: 'MÓDULO 3: FITNESS',
+      courses: [
+        {
+          id: '11',
+          title: 'MEMBROS SUPERIORES',
+          description: 'Treino focado em braços e ombros',
+          thumbnail: '/api/placeholder/320/480/11',
+          duration: 60,
+          students: 8760,
+          rating: 4.7,
+          price: 0,
+          isFree: true,
+          module: 'fitness',
+          lessonCount: 4
+        },
+        {
+          id: '12',
+          title: 'TREINO PARA GESTANTES',
+          description: 'Exercícios seguros para gestantes',
+          thumbnail: '/api/placeholder/320/480/12',
+          duration: 45,
+          students: 5430,
+          rating: 4.9,
+          price: 0,
+          isFree: true,
+          module: 'fitness',
+          lessonCount: 4
+        },
+        {
+          id: '13',
+          title: 'PERNAS DEFINIDAS',
+          description: 'Treino para pernas tonificadas',
+          thumbnail: '/api/placeholder/320/480/13',
+          duration: 75,
+          students: 9870,
+          rating: 4.8,
+          price: 0,
+          isFree: true,
+          module: 'fitness',
+          lessonCount: 4
+        },
+        {
+          id: '14',
+          title: 'TREINO DE MOBILIDADE',
+          description: 'Flexibilidade e mobilidade',
+          thumbnail: '/api/placeholder/320/480/14',
+          duration: 50,
+          students: 6540,
+          rating: 4.6,
+          price: 0,
+          isFree: true,
+          module: 'fitness',
+          lessonCount: 4
+        },
+        {
+          id: '15',
+          title: 'BUM BUM NA NUCA',
+          description: 'Treino focado em glúteos',
+          thumbnail: '/api/placeholder/320/480/15',
+          duration: 65,
+          students: 12340,
+          rating: 4.9,
+          price: 0,
+          isFree: true,
+          module: 'fitness',
+          lessonCount: 4
+        }
+      ]
+    }
+  ];
 
-  const inProgressCourses = courses.filter(course => course.progress > 0 && course.progress < 100);
-  const completedCourses = courses.filter(course => course.progress === 100);
+  const mockLessons: Lesson[] = [
+    {
+      id: '1',
+      title: 'Introdução ao HTML',
+      description: 'Conceitos básicos de HTML e estrutura de páginas web',
+      thumbnail: 'https://via.placeholder.com/200x120/6366f1/ffffff?text=HTML',
+      duration: 15,
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoType: 'youtube',
+      isCompleted: false
+    },
+    {
+      id: '2',
+      title: 'CSS Básico',
+      description: 'Estilização de páginas web com CSS',
+      thumbnail: 'https://via.placeholder.com/200x120/8b5cf6/ffffff?text=CSS',
+      duration: 20,
+      videoUrl: 'https://vimeo.com/123456789',
+      videoType: 'vimeo',
+      isCompleted: false
+    },
+    {
+      id: '3',
+      title: 'JavaScript Fundamentos',
+      description: 'Programação básica com JavaScript',
+      thumbnail: 'https://via.placeholder.com/200x120/a855f7/ffffff?text=JavaScript',
+      duration: 25,
+      videoUrl: 'https://panda.com/video/abc123',
+      videoType: 'panda',
+      isCompleted: false
+    },
+    {
+      id: '4',
+      title: 'React Hooks',
+      description: 'Gerenciamento de estado com React Hooks',
+      thumbnail: 'https://via.placeholder.com/200x120/ec4899/ffffff?text=React',
+      duration: 30,
+      videoUrl: '/uploads/video.mp4',
+      videoType: 'upload',
+      isCompleted: false
+    }
+  ];
 
-  return (
-    <div className="p-6 space-y-6 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Plataforma dos Sonhos</h1>
-          <p className="text-muted-foreground">Sua jornada de aprendizado em saúde</p>
-        </div>
-        
-        {/* View Toggle */}
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('grid')}
-          >
-            <Grid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
+  };
 
-      {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar cursos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-card border-border"
-          />
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedCategory(category)}
-              className={selectedCategory === category ? 'bg-primary' : ''}
-            >
-              {category}
-            </Button>
+  const formatPrice = (price: number) => {
+    return price === 0 ? 'Gratuito' : `R$ ${price}`;
+  };
+
+  const handleCourseClick = (course: Course) => {
+    setSelectedCourse(course);
+    setSelectedLesson(null);
+  };
+
+  const handleLessonClick = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+  };
+
+  const handleBackToCourses = () => {
+    setSelectedCourse(null);
+    setSelectedLesson(null);
+  };
+
+  const handleBackToLessons = () => {
+    setSelectedLesson(null);
+  };
+
+  const filteredModules = mockModules.map(module => ({
+    ...module,
+    courses: module.courses.filter(course =>
+      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.description.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  })).filter(module => module.courses.length > 0);
+
+  // Renderização da página inicial (grid de cursos)
+  if (!selectedCourse) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        {/* Módulos */}
+        <div className="container mx-auto px-6 py-8 space-y-12">
+          {filteredModules.map((module) => (
+            <div key={module.id} className="space-y-6">
+              {/* Título do Módulo */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold text-white">{module.title}</h3>
+                <span className="text-gray-400 text-sm">{module.courses.length} cursos</span>
+              </div>
+              
+              {/* Grid de Cursos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {module.courses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="w-80 h-96 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg cursor-pointer group transition-all duration-300 hover:scale-105 relative overflow-hidden border border-purple-500/30"
+                    style={{
+                      backgroundImage: `url(${course.thumbnail})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                    onClick={() => handleCourseClick(course)}
+                  >
+                    {/* Overlay escuro */}
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                    
+                    {/* Conteúdo do card */}
+                    <div className="relative z-10 h-full flex flex-col justify-end p-6">
+                      <h3 className="text-2xl font-bold text-white mb-2">{course.title}</h3>
+                      <p className="text-white/90 text-sm mb-4">{course.lessonCount} aulas</p>
+                      
+                      {/* Botão Assistir */}
+                      <Button 
+                        className="bg-white text-purple-600 hover:bg-white/90 font-semibold w-full"
+                        size="sm"
+                      >
+                        Assistir
+                      </Button>
+                    </div>
+                    
+                    {/* Badge de gratuito */}
+                    {course.isFree && (
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-green-500 hover:bg-green-600 text-white">
+                          Gratuito
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
+    );
+  }
 
-      {/* Course Sections */}
-      <Tabs defaultValue="todos" className="space-y-6">
-        <TabsList className="bg-card">
-          <TabsTrigger value="todos">Todos os Cursos</TabsTrigger>
-          <TabsTrigger value="progresso">Em Progresso ({inProgressCourses.length})</TabsTrigger>
-          <TabsTrigger value="concluidos">Concluídos ({completedCourses.length})</TabsTrigger>
-        </TabsList>
+  // Renderização da página de aulas do curso
+  if (selectedCourse && !selectedLesson) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        {/* Header */}
+        <header className="bg-black/20 backdrop-blur-sm border-b border-gray-800">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToCourses}
+                className="text-white hover:bg-white/10"
+              >
+                <ChevronLeft className="h-5 w-5" />
+                Voltar
+              </Button>
+              <h1 className="text-2xl font-bold text-white">{selectedCourse.title}</h1>
+            </div>
+          </div>
+        </header>
 
-        <TabsContent value="todos" className="space-y-6">
-          {/* Featured Course */}
-          <Card className="bg-gradient-primary text-white overflow-hidden">
-            <div className="p-8 relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
-              <div className="relative z-10">
-                <Badge className="bg-white/20 text-white mb-4">✨ Destaque da Semana</Badge>
-                <h2 className="text-2xl font-bold mb-2">Fundamentos da Saúde</h2>
-                <p className="text-white/90 mb-4 max-w-md">
-                  Comece sua jornada de transformação com nosso curso mais popular. 
-                  Aprenda os pilares fundamentais de uma vida saudável.
-                </p>
-                <div className="flex items-center space-x-4 text-sm mb-4">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-4 h-4" />
-                    <span>2h 30min</span>
+        {/* Banner do Curso */}
+        <div className="relative h-48 bg-gradient-to-r from-purple-600 to-blue-600 overflow-hidden">
+          <div className="absolute inset-0 bg-black/30"></div>
+          <div className="relative z-10 flex items-center justify-center h-full">
+            <div className="text-center text-white">
+              <h2 className="text-3xl font-bold mb-2">{selectedCourse.title}</h2>
+              <p className="text-lg opacity-90">{selectedCourse.description}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Grid de Aulas */}
+        <div className="container mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {mockLessons.map((lesson) => (
+              <Card
+                key={lesson.id}
+                className="bg-gray-800/50 border-gray-700 hover:border-purple-500 transition-all duration-300 cursor-pointer group"
+                onClick={() => handleLessonClick(lesson)}
+              >
+                <div className="relative">
+                  <div 
+                    className="w-full h-40 bg-gradient-to-br from-purple-500 to-blue-600 rounded-t-lg flex items-center justify-center"
+                    style={{
+                      backgroundImage: `url(${lesson.thumbnail})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors"></div>
+                    <div className="relative z-10">
+                      <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Users className="w-4 h-4" />
-                    <span>1,250 alunos</span>
+                  
+                  {lesson.isCompleted && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-green-500 hover:bg-green-600">
+                        ✓ Concluída
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-white mb-2">{lesson.title}</h3>
+                  <p className="text-sm text-gray-300 mb-3">{lesson.description}</p>
+                  
+                  <div className="flex items-center justify-between text-sm text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{formatDuration(lesson.duration)}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {lesson.videoType.toUpperCase()}
+                    </Badge>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span>4.8</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderização do Player de Vídeo
+  if (selectedCourse && selectedLesson) {
+    return (
+      <div className="min-h-screen bg-black">
+        {/* Header do Player */}
+        <header className="bg-black border-b border-gray-800">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToLessons}
+                className="text-white hover:bg-white/10"
+              >
+                <ChevronLeft className="h-5 w-5" />
+                Voltar ao Curso
+              </Button>
+              <h1 className="text-lg font-semibold text-white">{selectedCourse.title}</h1>
+            </div>
+            
+
+          </div>
+        </header>
+
+        <div className="flex">
+          {/* Player Principal */}
+          <div className="flex-1">
+            <div className="p-6">
+              {/* Player de Vídeo */}
+              <div className="bg-black rounded-lg overflow-hidden mb-6">
+                <div className="relative w-full" style={{ height: '776px' }}>
+                  <div className="w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+                    <div className="text-center text-white">
+                      <div className="text-6xl mb-4">🎬</div>
+                      <h3 className="text-2xl font-bold mb-2">{selectedLesson.title}</h3>
+                      <p className="text-lg opacity-90">{selectedLesson.description}</p>
+                      <div className="mt-4">
+                        <Badge className="bg-purple-500 hover:bg-purple-600">
+                          {selectedLesson.videoType.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <Button className="bg-white text-primary hover:bg-white/90">
-                  <Play className="w-4 h-4 mr-2" />
-                  Assistir Agora
-                </Button>
+              </div>
+
+              {/* Informações da Aula */}
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-white">{selectedLesson.title}</h2>
+                <p className="text-gray-300">{selectedLesson.description}</p>
+                
+                <div className="flex items-center space-x-4 text-sm text-gray-400">
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDuration(selectedLesson.duration)}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Users className="h-4 w-4" />
+                    <span>1.2k visualizações</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </Card>
-
-          {/* All Courses Grid */}
-          <div className={`grid gap-6 ${
-            viewMode === 'grid' 
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-              : 'grid-cols-1'
-          }`}>
-            {filteredCourses.map((course) => (
-              <CourseCard key={course.id} course={course} viewMode={viewMode} />
-            ))}
           </div>
-        </TabsContent>
 
-        <TabsContent value="progresso">
-          <div className={`grid gap-6 ${
-            viewMode === 'grid' 
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-              : 'grid-cols-1'
-          }`}>
-            {inProgressCourses.map((course) => (
-              <CourseCard key={course.id} course={course} viewMode={viewMode} />
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="concluidos">
-          <div className={`grid gap-6 ${
-            viewMode === 'grid' 
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-              : 'grid-cols-1'
-          }`}>
-            {completedCourses.map((course) => (
-              <div key={course.id} className="relative">
-                <CourseCard course={course} viewMode={viewMode} />
-                <div className="absolute top-4 right-4 bg-success text-white p-2 rounded-full">
-                  <Award className="w-4 h-4" />
+          {/* Sidebar com Lista de Aulas */}
+          <div className="w-80 bg-gray-900 border-l border-gray-800">
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-white mb-4">Aulas do Curso</h3>
+                
+                <div className="space-y-2">
+                  {mockLessons.map((lesson) => (
+                    <div
+                      key={lesson.id}
+                      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                        lesson.id === selectedLesson.id 
+                          ? 'bg-purple-600 text-white' 
+                          : 'hover:bg-gray-800 text-gray-300'
+                      }`}
+                      onClick={() => handleLessonClick(lesson)}
+                    >
+                      <div className="w-16 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded flex items-center justify-center">
+                        <Play className="h-4 w-4" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{lesson.title}</h4>
+                        <p className="text-xs opacity-75">{formatDuration(lesson.duration)}</p>
+                      </div>
+                      
+                      {lesson.isCompleted && (
+                        <div className="text-green-400">
+                          <CheckCircle className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
