@@ -1,143 +1,122 @@
-# Mission Health Nexus 99
+# Mission Health Nexus
 
-Uma plataforma completa de saúde e bem-estar com sistema de missões, cursos e monitoramento de peso.
+Uma plataforma completa de saúde e bem-estar com integração de balança inteligente, gamificação e acompanhamento personalizado.
 
-## 🚀 Tecnologias Utilizadas
+## 🚀 Tecnologias
 
-- **Frontend**: React + TypeScript + Vite
-- **UI**: Tailwind CSS + Shadcn/ui
-- **Backend**: Supabase (PostgreSQL + Auth + Storage)
-- **Deploy**: GitHub Actions + Vercel/Netlify
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: Shadcn/ui + Tailwind CSS
+- **Backend**: Supabase
+- **Deploy**: Lovable.dev
+- **Charts**: Recharts
+- **Bluetooth**: Web Bluetooth API
 
-## 📋 Pré-requisitos
+## 📋 Funcionalidades
 
-- Node.js 18+
-- npm ou yarn
-- Conta no Supabase
-- Conta no GitHub
+### 🏠 Landing Page
+- Design moderno e responsivo
+- Apresentação das funcionalidades principais
+- Call-to-action para começar a jornada
 
-## 🔧 Configuração
+### 📊 Dashboard Completo
+- Visão geral da saúde
+- Métricas em tempo real
+- Gráficos interativos
+- Sistema de missões diárias
 
-### 1. Clone o repositório
+### ⚖️ Integração com Balança
+- **Xiaomi Mi Body Scale 2**
+- Conexão via Bluetooth
+- Medições automáticas
+- Histórico de dados
+
+### 📈 Meu Progresso
+- Score de evolução inteligente
+- Gráficos detalhados
+- Sistema de conquistas
+- Análise preditiva
+
+### 🎯 Sistema de Missões
+- Missões diárias personalizadas
+- Gamificação completa
+- Sistema de pontos
+- Conquistas desbloqueáveis
+
+## 🛠️ Instalação
 
 ```bash
+# Clone o repositório
 git clone https://github.com/tvmensal2025/mission-health-nexus-99.git
+
+# Entre no diretório
 cd mission-health-nexus-99
-```
 
-### 2. Instale as dependências
-
-```bash
+# Instale as dependências
 npm install
-```
 
-### 3. Configuração do Supabase
+# Configure as variáveis de ambiente
+cp .env.example .env.local
 
-O projeto já está configurado com o Supabase. As variáveis de ambiente estão definidas em `src/integrations/supabase/client.ts`.
-
-**Configurações atuais:**
-- URL: `https://hlrkoyywjpckdotimtik.supabase.co`
-- Project ID: `hlrkoyywjpckdotimtik`
-
-### 4. Configuração do GitHub
-
-O repositório já está conectado ao GitHub:
-- **URL**: https://github.com/tvmensal2025/mission-health-nexus-99.git
-
-### 5. Variáveis de Ambiente
-
-Crie um arquivo `.env.local` na raiz do projeto:
-
-```env
-VITE_SUPABASE_URL=https://hlrkoyywjpckdotimtik.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscmtveXl3anBja2RvdGltdGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNTMwNDcsImV4cCI6MjA2ODcyOTA0N30.kYEtg1hYG2pmcyIeXRs-vgNIVOD76Yu7KPlyFN0vdUI
-```
-
-## 🏃‍♂️ Executando o Projeto
-
-### Desenvolvimento
-
-```bash
+# Execute em desenvolvimento
 npm run dev
 ```
 
-O projeto estará disponível em `http://localhost:5173`
+## 🌐 Deploy
 
-### Build de Produção
+### Lovable.dev
+1. Acesse: https://app.lovable.dev
+2. Importe o projeto do GitHub
+3. Configure as variáveis de ambiente
+4. Deploy automático
 
+### Variáveis de Ambiente
 ```bash
-npm run build
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+VITE_OPENAI_API_KEY=sua_chave_da_openai
 ```
 
-## 📊 Estrutura do Banco de Dados
+## 📱 URLs
 
-O Supabase está configurado com as seguintes tabelas principais:
+- **Desenvolvimento**: http://localhost:5173
+- **GitHub**: https://github.com/tvmensal2025/mission-health-nexus-99
+- **Lovable**: [Configurar após deploy]
 
-- **profiles**: Perfis dos usuários
-- **weight_measurements**: Medições de peso e composição corporal
-- **weighings**: Pesagens básicas
-- **courses**: Cursos disponíveis
-- **course_modules**: Módulos dos cursos
-- **lessons**: Aulas dos módulos
-- **missions**: Missões do sistema
-- **user_missions**: Missões atribuídas aos usuários
-- **assessments**: Avaliações semanais
-- **health_diary**: Diário de saúde
-- **user_goals**: Metas dos usuários
-- **weekly_analyses**: Análises semanais
+## 🎯 Funcionalidades Principais
 
-## 🔗 Integrações
+### Landing Page
+- Design moderno e responsivo
+- Apresentação das funcionalidades
+- Call-to-action para começar
 
-### Supabase
-- ✅ Configurado e funcionando
-- ✅ Autenticação implementada
-- ✅ Banco de dados PostgreSQL
-- ✅ Storage para arquivos
+### Dashboard
+- Visão geral da saúde
+- Métricas em tempo real
+- Gráficos interativos
+- Sistema de missões
 
-### GitHub
-- ✅ Repositório conectado
-- ✅ Versionamento ativo
-- ✅ Branch principal: `main`
+### Integração Balança
+- Xiaomi Mi Body Scale 2
+- Conexão Bluetooth
+- Medições automáticas
+- Histórico de dados
 
-## 🚀 Deploy
+### Meu Progresso
+- Score de evolução
+- Gráficos detalhados
+- Sistema de conquistas
+- Análise preditiva
 
-### Vercel (Recomendado)
+## 🚀 Status
 
-1. Conecte seu repositório GitHub ao Vercel
-2. Configure as variáveis de ambiente no painel do Vercel
-3. Deploy automático a cada push para `main`
-
-### Netlify
-
-1. Conecte seu repositório GitHub ao Netlify
-2. Configure as variáveis de ambiente
-3. Build command: `npm run build`
-4. Publish directory: `dist`
-
-## 📝 Scripts Disponíveis
-
-- `npm run dev` - Inicia o servidor de desenvolvimento
-- `npm run build` - Gera build de produção
-- `npm run build:dev` - Gera build de desenvolvimento
-- `npm run lint` - Executa o linter
-- `npm run preview` - Visualiza o build de produção
-
-## 🤝 Contribuição
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
-
-## 🆘 Suporte
-
-Para suporte, entre em contato através das issues do GitHub ou envie um email para [seu-email@exemplo.com]
+- ✅ **Frontend**: React + TypeScript + Vite
+- ✅ **UI**: Shadcn/ui + Tailwind CSS
+- ✅ **Backend**: Supabase
+- ✅ **Deploy**: Lovable.dev
+- ✅ **Balança**: Xiaomi Mi Body Scale 2
+- ✅ **Gamificação**: Sistema completo
+- ✅ **Responsivo**: Mobile-first design
 
 ---
 
-**Mission Health Nexus 99** - Transformando vidas através da tecnologia e saúde.
+**Desenvolvido com ❤️ para revolucionar a saúde digital!**
