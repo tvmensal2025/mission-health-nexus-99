@@ -24,7 +24,9 @@ import {
   Loader2,
   Wifi,
   Settings,
-  RefreshCw
+  RefreshCw,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -45,12 +47,22 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [connectionStep, setConnectionStep] = useState<'idle' | 'scanning' | 'connecting' | 'measuring' | 'complete'>('idle');
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+  const [scanTimeout, setScanTimeout] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     checkBluetoothSupport();
     fetchUserProfile();
     setupDebugLogging();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (scanTimeout) {
+        clearTimeout(scanTimeout);
+      }
+    };
   }, []);
 
   const setupDebugLogging = () => {
@@ -73,6 +85,10 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
     const supported = 'bluetooth' in navigator;
     setBluetoothSupported(supported);
     addDebugLog(`Bluetooth suportado: ${supported}`);
+    
+    if (!supported) {
+      setErrorMessage('Seu navegador não suporta Bluetooth. Use Chrome ou Edge.');
+    }
   };
 
   const fetchUserProfile = async () => {
@@ -110,23 +126,74 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
 
     setIsScanning(true);
     setConnectionStep('scanning');
+    setErrorMessage('');
     addDebugLog('Iniciando busca por dispositivos...');
+    
+    // Timeout de 30 segundos para evitar travamento
+    const timeout = setTimeout(() => {
+      setIsScanning(false);
+      setConnectionStep('idle');
+      setErrorMessage('Timeout: A busca demorou muito. Tente novamente.');
+      addDebugLog('Timeout na busca de dispositivos');
+      toast({
+        title: "Timeout na busca",
+        description: "A busca demorou muito. Verifique se a balança está ligada e próxima.",
+        variant: "destructive",
+      });
+    }, 30000);
+    
+    setScanTimeout(timeout);
     
     try {
       const foundDevices = await xiaomiScaleService.scanForDevices();
+      
+      // Clear timeout se sucesso
+      if (scanTimeout) {
+        clearTimeout(scanTimeout);
+        setScanTimeout(null);
+      }
+      
       setDevices(foundDevices);
       addDebugLog(`Dispositivos encontrados: ${foundDevices.length}`);
       
-      toast({
-        title: "Dispositivos encontrados",
-        description: `${foundDevices.length} balança(s) encontrada(s)`,
-      });
+      if (foundDevices.length === 0) {
+        setErrorMessage('Nenhuma balança encontrada. Verifique se está ligada e próxima.');
+        toast({
+          title: "Nenhuma balança encontrada",
+          description: "Verifique se a balança está ligada e próxima ao dispositivo",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Dispositivos encontrados",
+          description: `${foundDevices.length} balança(s) encontrada(s)`,
+        });
+      }
       
-    } catch (error) {
+    } catch (error: any) {
+      // Clear timeout se erro
+      if (scanTimeout) {
+        clearTimeout(scanTimeout);
+        setScanTimeout(null);
+      }
+      
       addDebugLog(`Erro na busca: ${error}`);
+      
+      let errorMsg = 'Erro desconhecido na busca';
+      if (error.name === 'NotFoundError') {
+        errorMsg = 'Nenhuma balança encontrada. Verifique se está ligada.';
+      } else if (error.name === 'NotAllowedError') {
+        errorMsg = 'Permissão de Bluetooth negada. Clique em "Permitir" no navegador.';
+      } else if (error.name === 'NetworkError') {
+        errorMsg = 'Erro de rede. Verifique a conexão Bluetooth.';
+      } else if (error.name === 'InvalidStateError') {
+        errorMsg = 'Bluetooth já está em uso. Tente novamente.';
+      }
+      
+      setErrorMessage(errorMsg);
       toast({
         title: "Erro na busca",
-        description: "Não foi possível escanear dispositivos",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -138,7 +205,20 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
   const connectToDevice = async (device: AppBluetoothDevice) => {
     setSelectedDevice(device);
     setConnectionStep('connecting');
+    setErrorMessage('');
     addDebugLog(`Conectando ao dispositivo: ${device.name}`);
+    
+    // Timeout de 15 segundos para conexão
+    const connectionTimeout = setTimeout(() => {
+      setConnectionStep('idle');
+      setErrorMessage('Timeout na conexão. Tente novamente.');
+      addDebugLog('Timeout na conexão');
+      toast({
+        title: "Timeout na conexão",
+        description: "A conexão demorou muito. Verifique se a balança está próxima.",
+        variant: "destructive",
+      });
+    }, 15000);
     
     try {
       await xiaomiScaleService.connectToDevice(device.id);
@@ -181,14 +261,27 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
         description: "Sua balança está pronta para uso",
       });
       
-    } catch (error) {
+    } catch (error: any) {
       addDebugLog(`Erro na conexão: ${error}`);
+      
+      let errorMsg = 'Erro desconhecido na conexão';
+      if (error.name === 'NetworkError') {
+        errorMsg = 'Erro de rede. Verifique se a balança está próxima.';
+      } else if (error.name === 'InvalidStateError') {
+        errorMsg = 'Dispositivo já conectado ou em uso.';
+      } else if (error.message?.includes('GATT')) {
+        errorMsg = 'Erro de comunicação com a balança. Tente novamente.';
+      }
+      
+      setErrorMessage(errorMsg);
       toast({
         title: "Erro na conexão",
-        description: "Não foi possível conectar com a balança",
+        description: errorMsg,
         variant: "destructive",
       });
       setConnectionStep('idle');
+    } finally {
+      clearTimeout(connectionTimeout);
     }
   };
 
@@ -206,72 +299,78 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
     setConnectionStep('measuring');
     addDebugLog('Iniciando medição...');
     
+    toast({
+      title: "Medição iniciada",
+      description: "Suba na balança descalço e fique parado",
+    });
+
     try {
       await xiaomiScaleService.startMeasurement();
-      addDebugLog('Comando de medição enviado');
-      
-      toast({
-        title: "Medição iniciada",
-        description: "Suba na balança descalço e aguarde",
-      });
-      
+      addDebugLog('Medição iniciada com sucesso');
     } catch (error) {
-      addDebugLog(`Erro na medição: ${error}`);
+      addDebugLog(`Erro ao iniciar medição: ${error}`);
+      setIsMeasuring(false);
+      setConnectionStep('idle');
       toast({
         title: "Erro na medição",
         description: "Não foi possível iniciar a medição",
         variant: "destructive",
       });
-      setIsMeasuring(false);
-      setConnectionStep('idle');
     }
   };
 
   const saveMeasurement = async () => {
-    if (!scaleData || !user) return;
+    if (!scaleData) {
+      toast({
+        title: "Nenhum dado para salvar",
+        description: "Faça uma medição primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const bmi = userProfile?.height ? 
-        scaleData.weight / Math.pow(userProfile.height / 100, 2) : null;
-
-      const { error } = await supabase
-        .from('weighings')
-        .insert({
-          user_id: user.id,
-          weight: scaleData.weight,
-          body_fat: scaleData.body_fat,
-          muscle_mass: scaleData.muscle_mass,
-          body_water: scaleData.body_water,
-          bone_mass: scaleData.bone_mass,
-          basal_metabolism: scaleData.basal_metabolism,
-          metabolic_age: scaleData.metabolic_age,
-          bmi: bmi,
-          device_type: 'xiaomi_mi_body_scale_2'
-        });
+              const { error } = await supabase
+          .from('weight_measurements')
+          .insert([
+            {
+              user_id: user?.id,
+              peso_kg: scaleData.weight,
+              gordura_corporal_percent: scaleData.body_fat,
+              massa_muscular_kg: scaleData.muscle_mass,
+              agua_corporal_percent: scaleData.body_water,
+              osso_kg: scaleData.bone_mass,
+              metabolismo_basal_kcal: scaleData.basal_metabolism,
+              idade_metabolica: scaleData.metabolic_age,
+              gordura_visceral: scaleData.visceral_fat,
+              device_type: 'xiaomi_mi_body_scale_2',
+              measurement_date: scaleData.timestamp.toISOString()
+            }
+          ]);
 
       if (error) {
         addDebugLog(`Erro ao salvar: ${error.message}`);
-        throw error;
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar a medição",
+          variant: "destructive",
+        });
+      } else {
+        addDebugLog('Medição salva com sucesso');
+        toast({
+          title: "Medição salva! 🎉",
+          description: "Seus dados foram salvos com sucesso",
+        });
+        
+        // Reset para nova medição
+        setScaleData(null);
+        setConnectionStep('idle');
       }
-
-      addDebugLog('Medição salva com sucesso');
-      
-      // Atualizar perfil com peso atual
-      await supabase
-        .from('profiles')
-        .update({ current_weight: scaleData.weight })
-        .eq('user_id', user.id);
-
-      toast({
-        title: "Dados salvos! 🎉",
-        description: "Sua medição foi registrada com sucesso",
-      });
-      
     } catch (error) {
-      addDebugLog(`Erro ao salvar medição: ${error}`);
+      addDebugLog(`Erro ao salvar: ${error}`);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar os dados",
+        description: "Não foi possível salvar a medição",
         variant: "destructive",
       });
     }
@@ -283,6 +382,7 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
     setSelectedDevice(null);
     setScaleData(null);
     setConnectionStep('idle');
+    setErrorMessage('');
     setDevices([]);
     addDebugLog('Conexão resetada');
   };
@@ -294,348 +394,251 @@ export const XiaomiScaleTest: React.FC<XiaomiScaleTestProps> = ({ user }) => {
     return { text: 'Obesidade', color: 'text-red-500' };
   };
 
+  const clearDebugLogs = () => {
+    setDebugLogs([]);
+  };
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold flex items-center gap-3">
-          <Scale className="h-10 w-10 text-blue-600" />
-          Teste Xiaomi Mi Body Scale 2
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Teste de conexão e medição com sua balança Xiaomi
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Teste Xiaomi Mi Body Scale 2</h1>
+          <p className="text-muted-foreground">
+            Conecte e teste sua balança Xiaomi
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowTroubleshooting(!showTroubleshooting)}
+        >
+          <AlertTriangle className="w-4 h-4 mr-2" />
+          Troubleshooting
+        </Button>
       </div>
 
-      {/* Bluetooth Support Check */}
-      {!bluetoothSupported && (
+      {showTroubleshooting && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Seu navegador não suporta Web Bluetooth API. Para usar esta funcionalidade, 
-            acesse através do Chrome ou Edge mais recente.
+            <div className="space-y-2">
+              <p><strong>Problemas de Pareamento:</strong></p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Certifique-se de que a balança está ligada e próxima (1 metro)</li>
+                <li>Pise na balança para ativar o Bluetooth</li>
+                <li>Verifique se não há outros dispositivos conectados</li>
+                <li>Use Chrome ou Edge (não Safari)</li>
+                <li>Clique em "Permitir" quando o navegador solicitar</li>
+                <li>Se travou, recarregue a página e tente novamente</li>
+              </ul>
+            </div>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Connection Status */}
-      <Card className="health-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bluetooth className="h-5 w-5" />
-            Status da Conexão
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="font-medium">
-                {isConnected ? 'Conectado' : 'Desconectado'}
-              </span>
-              {selectedDevice && (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  {selectedDevice.name}
-                </Badge>
-              )}
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Status e Controles */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bluetooth className="w-5 h-5" />
+              Status da Conexão
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span>Bluetooth:</span>
+              <Badge variant={bluetoothSupported ? "default" : "destructive"}>
+                {bluetoothSupported ? "Suportado" : "Não Suportado"}
+              </Badge>
             </div>
             
-            {!isConnected && (
-              <Button 
-                onClick={scanForDevices} 
+            <div className="flex items-center justify-between">
+              <span>Conexão:</span>
+              <Badge variant={isConnected ? "default" : "secondary"}>
+                {isConnected ? "Conectado" : "Desconectado"}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span>Medição:</span>
+              <Badge variant={isMeasuring ? "default" : "secondary"}>
+                {isMeasuring ? "Em Andamento" : "Parado"}
+              </Badge>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Button
+                onClick={scanForDevices}
                 disabled={isScanning || !bluetoothSupported}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="w-full"
               >
                 {isScanning ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Escaneando...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Procurando balança...
                   </>
                 ) : (
                   <>
-                    <Wifi className="h-4 w-4 mr-2" />
+                    <Wifi className="w-4 h-4 mr-2" />
                     Buscar Balança
                   </>
                 )}
               </Button>
-            )}
 
-            {isConnected && (
-              <Button 
+              {devices.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Dispositivos encontrados:</p>
+                  {devices.map((device) => (
+                    <Button
+                      key={device.id}
+                      variant={device.connected ? "default" : "outline"}
+                      onClick={() => connectToDevice(device)}
+                      disabled={isConnected || connectionStep === 'connecting'}
+                      className="w-full justify-start"
+                    >
+                      <Scale className="w-4 h-4 mr-2" />
+                      {device.name}
+                      {device.connected && <CheckCircle2 className="w-4 h-4 ml-auto" />}
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {isConnected && (
+                <Button
+                  onClick={startMeasurement}
+                  disabled={isMeasuring}
+                  className="w-full"
+                >
+                  {isMeasuring ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Medindo...
+                    </>
+                  ) : (
+                    <>
+                      <Activity className="w-4 h-4 mr-2" />
+                      Iniciar Medição
+                    </>
+                  )}
+                </Button>
+              )}
+
+              <Button
                 onClick={resetConnection}
                 variant="outline"
-                size="sm"
+                className="w-full"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reset
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Resetar Conexão
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Available Devices */}
-      {devices.length > 0 && (
-        <Card className="health-card">
+        {/* Dados da Medição */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Dispositivos Encontrados
+              <Scale className="w-5 h-5" />
+              Dados da Medição
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {devices.map((device) => (
-                <div key={device.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Scale className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium">{device.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {device.type === 'xiaomi_mi_body_scale_2' ? 'Balança Inteligente' : 'Balança Bluetooth'}
-                      </p>
+            {scaleData ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {scaleData.weight} kg
                     </div>
+                    <div className="text-sm text-blue-500">Peso</div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {device.connected ? (
-                      <Badge className="bg-green-100 text-green-800">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Conectado
-                      </Badge>
-                    ) : (
-                      <Button
-                        onClick={() => connectToDevice(device)}
-                        size="sm"
-                        disabled={isConnected}
-                      >
-                        Conectar
-                      </Button>
-                    )}
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {userProfile?.height ? ((scaleData.weight / Math.pow(userProfile.height / 100, 2)).toFixed(1)) : 'N/A'}
+                    </div>
+                    <div className="text-sm text-green-500">IMC</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Measurement Process */}
-      {isConnected && (
-        <Card className="health-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5" />
-              Processo de Medição
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {connectionStep === 'measuring' && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 animate-pulse" />
-                  <span className="text-sm">Capturando dados...</span>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Droplets className="w-4 h-4 text-blue-500" />
+                    <span>Gordura: {scaleData.body_fat?.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-purple-500" />
+                    <span>Músculo: {scaleData.muscle_mass?.toFixed(1)}kg</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-red-500" />
+                    <span>Água: {scaleData.body_water?.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Bone className="w-4 h-4 text-yellow-500" />
+                    <span>Osso: {scaleData.bone_mass?.toFixed(1)}kg</span>
+                  </div>
                 </div>
-                <Progress value={66} className="w-full" />
+
+                <Button
+                  onClick={saveMeasurement}
+                  className="w-full"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Salvar Medição
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Scale className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhuma medição realizada</p>
+                <p className="text-sm">Conecte-se a uma balança e inicie uma medição</p>
               </div>
             )}
-            
-            <div className="flex gap-3">
-              <Button 
-                onClick={startMeasurement}
-                disabled={isMeasuring}
-                className="flex-1 bg-primary hover:bg-primary/90"
-              >
-                {isMeasuring ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Medindo...
-                  </>
-                ) : (
-                  <>
-                    <Scale className="h-4 w-4 mr-2" />
-                    Iniciar Medição
-                  </>
-                )}
-              </Button>
-              
-              <Button variant="outline" size="icon">
-                <Info className="h-4 w-4" />
-              </Button>
-            </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Measurement Results */}
-      {scaleData && (
-        <Card className="health-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Resultados da Medição
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Peso</span>
-                  <span className="text-lg font-bold">{scaleData.weight} kg</span>
-                </div>
-                
-                {userProfile?.height && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">IMC</span>
-                    <span className="text-lg font-bold">
-                      {(scaleData.weight / Math.pow(userProfile.height / 100, 2)).toFixed(1)}
-                    </span>
-                  </div>
-                )}
-                
-                {scaleData.body_fat && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <Droplets className="h-3 w-3" />
-                      Gordura Corporal
-                    </span>
-                    <span className="text-lg font-bold">{scaleData.body_fat.toFixed(1)}%</span>
-                  </div>
-                )}
-                
-                {scaleData.muscle_mass && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <Zap className="h-3 w-3" />
-                      Massa Muscular
-                    </span>
-                    <span className="text-lg font-bold">{scaleData.muscle_mass.toFixed(1)} kg</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-3">
-                {scaleData.body_water && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <Droplets className="h-3 w-3" />
-                      Água Corporal
-                    </span>
-                    <span className="text-lg font-bold">{scaleData.body_water.toFixed(1)}%</span>
-                  </div>
-                )}
-                
-                {scaleData.bone_mass && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <Bone className="h-3 w-3" />
-                      Massa Óssea
-                    </span>
-                    <span className="text-lg font-bold">{scaleData.bone_mass.toFixed(1)} kg</span>
-                  </div>
-                )}
-                
-                {scaleData.basal_metabolism && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <Heart className="h-3 w-3" />
-                      Metabolismo Basal
-                    </span>
-                    <span className="text-lg font-bold">{scaleData.basal_metabolism} kcal</span>
-                  </div>
-                )}
-                
-                {scaleData.metabolic_age && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1">
-                      <Brain className="h-3 w-3" />
-                      Idade Metabólica
-                    </span>
-                    <span className="text-lg font-bold">{scaleData.metabolic_age} anos</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <Separator className="my-4" />
-            
-            <div className="flex gap-3">
-              <Button 
-                onClick={saveMeasurement}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Salvar Medição
-              </Button>
-              
-              <Button 
-                onClick={() => setScaleData(null)}
-                variant="outline"
-              >
-                Nova Medição
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Debug Logs */}
-      <Card className="health-card">
+      {/* Logs de Debug */}
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            Logs de Debug
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Logs de Debug
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearDebugLogs}
+            >
+              <X className="w-4 h-4" />
+              Limpar
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="max-h-40 overflow-y-auto space-y-1">
-            {debugLogs.map((log, index) => (
-              <div key={index} className="text-xs font-mono bg-muted p-2 rounded">
-                {log}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Instructions */}
-      <Card className="health-card">
-        <CardHeader>
-          <CardTitle>Como Usar</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
-              <div>
-                <p className="font-medium">Ative o Bluetooth</p>
-                <p className="text-sm text-muted-foreground">Certifique-se de que o Bluetooth está ativado no seu dispositivo</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
-              <div>
-                <p className="font-medium">Busque sua balança</p>
-                <p className="text-sm text-muted-foreground">Clique em "Buscar Balança" e aguarde a detecção</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
-              <div>
-                <p className="font-medium">Conecte-se</p>
-                <p className="text-sm text-muted-foreground">Selecione sua balança Xiaomi na lista e conecte</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
-              <div>
-                <p className="font-medium">Faça a medição</p>
-                <p className="text-sm text-muted-foreground">Suba na balança descalço e aguarde a captura dos dados</p>
-              </div>
-            </div>
+          <div className="bg-gray-900 text-green-400 p-4 rounded-lg h-64 overflow-y-auto font-mono text-sm">
+            {debugLogs.length === 0 ? (
+              <p className="text-gray-500">Nenhum log disponível</p>
+            ) : (
+              debugLogs.map((log, index) => (
+                <div key={index} className="mb-1">
+                  {log}
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
