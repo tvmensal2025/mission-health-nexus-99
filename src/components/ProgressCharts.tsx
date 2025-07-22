@@ -38,7 +38,7 @@ export default function ProgressCharts({ measurements }: ProgressChartsProps) {
       index
     }));
 
-  const formatTooltip = (value: any, name: string) => {
+  const formatTooltip = (value: string | number, name: string) => {
     switch (name) {
       case 'weight':
         return [`${value}kg`, 'Peso'];
@@ -55,12 +55,12 @@ export default function ProgressCharts({ measurements }: ProgressChartsProps) {
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ color: string; name: string; value: string | number }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium text-foreground">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: { color: string; name: string; value: string | number }, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {entry.value}
             </p>

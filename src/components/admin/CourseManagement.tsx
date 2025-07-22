@@ -187,7 +187,7 @@ export const CourseManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleCreateCourse = async (courseData: any) => {
+  const handleCreateCourse = async (courseData: { title: string; description: string; isActive: boolean; category: string }) => {
     try {
       // Simular criação do curso
       const newCourse: Course = {
@@ -219,7 +219,7 @@ export const CourseManagement = () => {
     }
   };
 
-  const handleCreateModule = async (moduleData: any) => {
+  const handleCreateModule = async (moduleData: { title: string; description: string; courseId: string; order: number; isActive: boolean }) => {
     try {
       // Simular criação do módulo
       const newModule = {
@@ -252,7 +252,7 @@ export const CourseManagement = () => {
     }
   };
 
-  const handleCreateLesson = async (lessonData: any) => {
+  const handleCreateLesson = async (lessonData: { title: string; description: string; type: string; duration: string; order: number; isActive: boolean; courseId: string; moduleId: string; videoUrl?: string; richTextContent?: string; mixedContent?: string; objectives?: string[]; prerequisites?: string[]; resources?: string[]; quizJson?: string; tags?: string[] }) => {
     try {
       // Simular criação da aula
       const newLesson = {

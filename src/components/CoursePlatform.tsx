@@ -117,9 +117,23 @@ const courses = [
   }
 ];
 
+interface Course {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  instructor: string;
+  duration: string;
+  students: number;
+  rating: number;
+  thumbnail: string;
+  progress: number;
+  episodes?: { id: number; title: string; duration: string; completed: boolean; }[];
+}
+
 const categories = ["Todos", "Saúde Básica", "Emagrecimento", "Saúde Mental", "Nutrição", "Exercício", "Recuperação"];
 
-const CourseCard = ({ course, viewMode }: { course: any; viewMode: 'grid' | 'list' }) => {
+const CourseCard = ({ course, viewMode }: { course: Course; viewMode: 'grid' | 'list' }) => {
   if (viewMode === 'list') {
     return (
       <Card className="health-card flex flex-row">

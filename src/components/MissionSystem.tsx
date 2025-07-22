@@ -19,7 +19,7 @@ interface Mission {
   progress: number;
   target: number;
   unit: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   completed: boolean;
   timeRemaining?: string;
