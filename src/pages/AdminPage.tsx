@@ -22,10 +22,10 @@ import {
   HelpCircle,
   Database
 } from "lucide-react";
-import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { UserManagement } from "@/components/admin/UserManagement";
-import { WeighingMonitoring } from "@/components/admin/WeighingMonitoring";
-import { AdvancedReports } from "@/components/admin/AdvancedReports";
+import AdminDashboard from "@/components/admin/AdminDashboard";
+import UserManagement from "@/components/admin/UserManagement";
+import WeighingMonitoring from "@/components/admin/WeighingMonitoring";
+import AdvancedReports from "@/components/admin/AdvancedReports";
 import { CourseManagement } from "@/components/admin/CourseManagement";
 
 const AdminPage = () => {
