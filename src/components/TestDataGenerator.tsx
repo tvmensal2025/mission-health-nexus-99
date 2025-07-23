@@ -109,11 +109,9 @@ export default function TestDataGenerator() {
         .insert({
           user_id: user.id,
           altura_cm: 175,
-          peso_kg: 75,
           idade: 30,
-          genero: 'M',
-          nivel_atividade: 'moderado',
-          objetivo: 'perda_peso'
+          sexo: 'masculino',
+          nivel_atividade: 'moderado'
         })
         .select();
 
@@ -138,9 +136,8 @@ export default function TestDataGenerator() {
         .insert({
           user_id: user.id,
           peso_meta_kg: 70,
-          data_meta: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'ativo',
-          tipo_meta: 'perda_peso'
+          data_fim: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          status: 'ativo'
         })
         .select();
 
@@ -181,10 +178,9 @@ export default function TestDataGenerator() {
           imc: weight / Math.pow(1.75, 2),
           idade_metabolica: 30 - (i * 0.1),
           agua_corporal_percent: 60 + (Math.random() * 5 - 2.5),
-          massa_ossea_kg: 3.5 + (Math.random() * 0.5 - 0.25),
-          proteina_corporal_percent: 15 + (Math.random() * 2 - 1),
+          osso_kg: 3.5 + (Math.random() * 0.5 - 0.25),
           gordura_visceral: 8 + (Math.random() * 2 - 1),
-          taxa_metabolica_basal: 1800 + (Math.random() * 200 - 100)
+          metabolismo_basal_kcal: 1800 + (Math.random() * 200 - 100)
         });
       }
 

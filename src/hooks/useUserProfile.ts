@@ -68,14 +68,14 @@ export const useUserProfile = (user: User | null) => {
           setProfileData({
             fullName: userProfileData.full_name || user.user_metadata?.full_name || '',
             email: user.email || '',
-            phone: userProfileData.phone || user.user_metadata?.phone || '',
-            birthDate: userProfileData.birth_date || user.user_metadata?.birth_date || '',
-            city: userProfileData.city || user.user_metadata?.city || '',
-            state: userProfileData.state || user.user_metadata?.state || '',
-            avatarUrl: userProfileData.avatar_url || user.user_metadata?.avatar_url || '',
-            bio: userProfileData.bio || user.user_metadata?.bio || 'Transformando minha vida através da saúde e bem-estar.',
-            goals: userProfileData.goals || user.user_metadata?.goals || ['Perder peso', 'Melhorar condicionamento', 'Adotar hábitos saudáveis'],
-            achievements: userProfileData.achievements || user.user_metadata?.achievements || ['Primeira semana completa', 'Primeira pesagem registrada']
+          phone: userProfileData.phone || user.user_metadata?.phone || '',
+          birthDate: userProfileData.birth_date || user.user_metadata?.birth_date || '',
+          city: userProfileData.city || user.user_metadata?.city || '',
+          state: userProfileData.state || user.user_metadata?.state || '',
+          avatarUrl: userProfileData.avatar_url || user.user_metadata?.avatar_url || '',
+          bio: userProfileData.bio || user.user_metadata?.bio || 'Transformando minha vida através da saúde e bem-estar.',
+          goals: userProfileData.goals || user.user_metadata?.goals || ['Perder peso', 'Melhorar condicionamento', 'Adotar hábitos saudáveis'],
+          achievements: userProfileData.achievements || user.user_metadata?.achievements || ['Primeira semana completa', 'Primeira pesagem registrada']
           });
           return;
         }
@@ -86,14 +86,14 @@ export const useUserProfile = (user: User | null) => {
         setProfileData({
           fullName: data.full_name || user.user_metadata?.full_name || '',
           email: user.email || '',
-          phone: data.phone || user.user_metadata?.phone || '',
-          birthDate: data.birth_date || user.user_metadata?.birth_date || '',
-          city: data.city || user.user_metadata?.city || '',
-          state: data.state || user.user_metadata?.state || '',
+          phone: (data as any).phone || user.user_metadata?.phone || '',
+          birthDate: (data as any).birth_date || user.user_metadata?.birth_date || '',
+          city: (data as any).city || user.user_metadata?.city || '',
+          state: (data as any).state || user.user_metadata?.state || '',
           avatarUrl: data.avatar_url || user.user_metadata?.avatar_url || '',
-          bio: data.bio || user.user_metadata?.bio || 'Transformando minha vida através da saúde e bem-estar.',
-          goals: data.goals || user.user_metadata?.goals || ['Perder peso', 'Melhorar condicionamento', 'Adotar hábitos saudáveis'],
-          achievements: data.achievements || user.user_metadata?.achievements || ['Primeira semana completa', 'Primeira pesagem registrada']
+          bio: (data as any).bio || user.user_metadata?.bio || 'Transformando minha vida através da saúde e bem-estar.',
+          goals: (data as any).goals || user.user_metadata?.goals || ['Perder peso', 'Melhorar condicionamento', 'Adotar hábitos saudáveis'],
+          achievements: (data as any).achievements || user.user_metadata?.achievements || ['Primeira semana completa', 'Primeira pesagem registrada']
         });
       } else {
         // Dados padrão se não existir perfil

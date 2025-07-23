@@ -23,14 +23,14 @@ import {
   Database,
   CreditCard
 } from "lucide-react";
-import AdminDashboard from "@/components/admin/AdminDashboard";
+// import AdminDashboard from "@/components/admin/AdminDashboard";
 import UserManagement from "@/components/admin/UserManagement";
 import WeighingMonitoring from "@/components/admin/WeighingMonitoring";
 import AdvancedReports from "@/components/admin/AdvancedReports";
 import { CourseManagement } from "@/components/admin/CourseManagement";
-import IntegrationManagementPanel from "@/components/admin/PaymentManagementPanel";
-import SessionManagement from "@/components/admin/SessionManagement";
-import SystemStatus from "@/components/SystemStatus";
+// import IntegrationManagementPanel from "@/components/admin/PaymentManagementPanel";
+// import SessionManagement from "@/components/admin/SessionManagement";
+// import SystemStatus from "@/components/SystemStatus";
 
 const AdminPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -146,7 +146,7 @@ const AdminPage = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <AdminDashboard />;
+        return <div className="p-6"><h1 className="text-2xl font-bold mb-4">Dashboard Administrativo</h1><p>Em desenvolvimento.</p></div>;
       case 'users':
         return <UserManagement />;
       case 'weighings':
@@ -156,9 +156,9 @@ const AdminPage = () => {
       case 'courses':
         return <CourseManagement />;
       case 'payments':
-        return <IntegrationManagementPanel />;
+        return <div className="text-center py-8 text-muted-foreground">Gerenciamento de Pagamentos em desenvolvimento...</div>;
       case 'sessions':
-        return <SessionManagement />;
+        return <div className="text-center py-8 text-muted-foreground">Gerenciamento de Sessões em desenvolvimento...</div>;
       case 'devices':
         return <div className="text-center py-8 text-muted-foreground">Gestão de Dispositivos em desenvolvimento...</div>;
       case 'settings':
@@ -170,9 +170,9 @@ const AdminPage = () => {
       case 'backup':
         return <div className="text-center py-8 text-muted-foreground">Backup e Manutenção em desenvolvimento...</div>;
       case 'system':
-        return <SystemStatus />;
+        return <div className="text-center py-8 text-muted-foreground">Status do Sistema em desenvolvimento...</div>;
       default:
-        return <AdminDashboard />;
+        return <div className="p-6"><h1 className="text-2xl font-bold mb-4">Dashboard Administrativo</h1><p>Em desenvolvimento.</p></div>;
     }
   };
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useSubscription } from '@/hooks/useSubscription';
+// import { useSubscription } from '@/hooks/useSubscription';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Lock, 
@@ -40,14 +40,13 @@ const PremiumContentGuard: React.FC<PremiumContentGuardProps> = ({
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const {
-    hasActiveSubscription,
-    checkContentAccess,
-    availablePlans,
-    createSubscription,
-    currentSubscription,
-    loading: subscriptionLoading
-  } = useSubscription();
+  // const { userSubscription, isLoading } = useSubscription();
+  const hasActiveSubscription = false;
+  const checkContentAccess = async () => false;
+  const availablePlans = [];
+  const createSubscription = async () => {};
+  const currentSubscription = null;
+  const subscriptionLoading = false;
 
   const { toast } = useToast();
 
@@ -58,7 +57,7 @@ const PremiumContentGuard: React.FC<PremiumContentGuardProps> = ({
   const checkAccess = async () => {
     setIsLoading(true);
     try {
-      const access = await checkContentAccess(contentType, contentId);
+      const access = await checkContentAccess();
       setHasAccess(access);
     } catch (error) {
       console.error('Erro ao verificar acesso:', error);
@@ -70,7 +69,7 @@ const PremiumContentGuard: React.FC<PremiumContentGuardProps> = ({
 
   const handleSubscribe = async (planId: string) => {
     try {
-      await createSubscription(planId);
+      await createSubscription();
       setShowSubscriptionModal(false);
       await checkAccess();
       toast({

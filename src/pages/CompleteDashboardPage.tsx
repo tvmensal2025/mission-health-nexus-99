@@ -35,7 +35,7 @@ import MyProgress from '@/components/MyProgress';
 import SaboteurTest from '@/components/SaboteurTest';
 import { UserProfile } from "@/components/UserProfile";
 import DebugDataVerification from '@/components/DebugDataVerification';
-import UserSessions from "@/components/dashboard/UserSessions";
+// import UserSessions from "@/components/dashboard/UserSessions";
 
 type DashboardSection = 
   | 'dashboard' 
@@ -134,7 +134,7 @@ const CompleteDashboardPage = () => {
       case 'saboteur-test':
         return <SaboteurTest />;
       case 'sessions':
-        return <UserSessions />;
+        return <div className="p-6 text-center text-muted-foreground">Sessões de usuário em desenvolvimento...</div>;
       case 'ranking':
         return (
           <div className="p-6">

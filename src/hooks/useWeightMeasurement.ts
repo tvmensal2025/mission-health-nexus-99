@@ -7,9 +7,9 @@ export interface WeightMeasurement {
   peso_kg: number;
   gordura_corporal_percent?: number;
   gordura_visceral?: number;
-  massa_muscular_kg?: number;
-  agua_corporal_percent?: number;
-  osso_kg?: number;
+        massa_muscular_kg?: number;
+        agua_corporal_percent?: number;
+        osso_kg?: number;
   metabolismo_basal_kcal?: number;
   idade_metabolica?: number;
   risco_metabolico?: string;
