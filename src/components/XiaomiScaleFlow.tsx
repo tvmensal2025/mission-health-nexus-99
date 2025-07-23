@@ -319,7 +319,7 @@ export const XiaomiScaleFlow: React.FC = () => {
           gordura_corporal_percent: scaleData.bodyFat,
           massa_muscular_kg: scaleData.muscleMass,
           agua_corporal_percent: scaleData.waterPercentage,
-          massa_ossea_kg: scaleData.boneMass,
+          osso_kg: scaleData.boneMass,
           gordura_visceral: scaleData.visceralFat,
           idade_metabolica: scaleData.metabolicAge,
           circunferencia_abdominal_cm: abdominalCircumference ? parseFloat(abdominalCircumference) : undefined,

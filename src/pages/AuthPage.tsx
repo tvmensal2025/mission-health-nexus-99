@@ -225,6 +225,12 @@ const AuthPage = () => {
 
           if (profileError) {
             console.error('Erro ao criar perfil:', profileError);
+            toast({
+              title: "Atenção",
+              description: "Conta criada, mas erro ao criar perfil: " + profileError.message,
+              variant: "destructive",
+            });
+            return;
           }
 
           // Criar dados físicos automaticamente
@@ -241,13 +247,13 @@ const AuthPage = () => {
           if (physicalError) {
             console.error('Erro ao criar dados físicos:', physicalError);
           }
-        }
 
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Bem-vindo ao Instituto dos Sonhos. Seus dados foram salvos.",
-        });
-        navigate("/dashboard");
+          toast({
+            title: "Conta criada com sucesso!",
+            description: "Bem-vindo ao Instituto dos Sonhos. Seus dados foram salvos.",
+          });
+          navigate("/dashboard");
+        }
       }
     } catch (error) {
       toast({
