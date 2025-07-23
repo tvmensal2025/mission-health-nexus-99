@@ -129,17 +129,12 @@ const WeeklyAnalysis: React.FC = () => {
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">IMC Médio</p>
                   <p className="text-2xl font-bold">
-                    {analysis.media_imc ? analysis.media_imc.toFixed(1) : '-'}
+                    {'-'}
                   </p>
                 </div>
               </div>
               
-              {analysis.observacoes && (
-                <div className="mt-4 p-4 bg-secondary/20 rounded-lg">
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Observações:</p>
-                  <p className="text-sm">{analysis.observacoes}</p>
-                </div>
-              )}
+              {/* Observações removidas temporariamente */}
             </CardContent>
           </Card>
         ))}

@@ -90,7 +90,7 @@ export const useWeightMeasurement = () => {
   }, []);
 
   // Salvar dados físicos do usuário
-  const savePhysicalData = async (data: Omit<UserPhysicalData, 'id' | 'created_at' | 'updated_at'>) => {
+  const savePhysicalData = async (data: Omit<UserPhysicalData, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       setLoading(true);
       setError(null);

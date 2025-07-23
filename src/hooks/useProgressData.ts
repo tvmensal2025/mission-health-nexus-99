@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import type { Database } from '../integrations/supabase/types';
 
-type WeightMeasurement = Database['public']['Tables']['weight_measurements']['Row'];
+export type WeightMeasurement = Database['public']['Tables']['weight_measurements']['Row'];
 type UserGoal = Database['public']['Tables']['user_goals']['Row'];
 
 interface ProgressData {
