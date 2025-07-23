@@ -21,17 +21,21 @@ import {
   TrendingUp,
   CreditCard,
   Grid3X3,
-  HelpCircle,
   Menu,
   X,
-  Scale
+  User as UserIcon,
+  Bug
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import DailyMissions from "@/components/dashboard/DailyMissions";
 import CoursePlatformNetflix from "@/components/dashboard/CoursePlatformNetflix";
-import WeighingPage from "@/components/dashboard/WeighingPage";
 import { useToast } from "@/hooks/use-toast";
+import MyProgress from '@/components/MyProgress';
+import SaboteurTest from '@/components/SaboteurTest';
+import { UserProfile } from "@/components/UserProfile";
+import DebugDataVerification from '@/components/DebugDataVerification';
+import UserSessions from "@/components/dashboard/UserSessions";
 
 type DashboardSection = 
   | 'dashboard' 
@@ -49,10 +53,11 @@ type DashboardSection =
   | 'progress'
   | 'analytics'
   | 'google-fit'
-  | 'scale-test'
   | 'subscriptions'
   | 'apps'
-  | 'help';
+  | 'help'
+  | 'profile'
+  | 'debug';
 
 const CompleteDashboardPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -110,33 +115,26 @@ const CompleteDashboardPage = () => {
     { id: 'progress', icon: TrendingUp, label: 'Meu Progresso', color: 'text-cyan-500' },
     { id: 'analytics', icon: TrendingUp, label: 'Análise Avançada', color: 'text-indigo-500' },
     { id: 'google-fit', icon: Activity, label: 'Google Fit', color: 'text-green-600' },
-    { id: 'scale-test', icon: Scale, label: 'Teste Xiaomi Mi Body Scale 2', color: 'text-blue-600' },
     { id: 'subscriptions', icon: CreditCard, label: 'Assinaturas', color: 'text-purple-600' },
     { id: 'apps', icon: Grid3X3, label: 'Apps', color: 'text-gray-600' },
-    { id: 'help', icon: HelpCircle, label: 'Ajuda', color: 'text-blue-400' },
+    { id: 'profile', icon: UserIcon, label: 'Meu Perfil', color: 'text-blue-400' },
+    { id: 'debug', icon: Bug, label: 'Debug', color: 'text-red-500' },
   ];
 
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview user={user} />;
+        return <DashboardOverview />;
       case 'missions':
         return <DailyMissions user={user} />;
       case 'courses':
         return <CoursePlatformNetflix user={user} />;
-      case 'scale-test':
-        return <WeighingPage user={user} />;
+      case 'progress':
+        return <MyProgress />;
+      case 'saboteur-test':
+        return <SaboteurTest />;
       case 'sessions':
-        return (
-          <div className="p-6">
-            <h1 className="text-3xl font-bold mb-4">Sessões Terapêuticas</h1>
-            <Card className="health-card">
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <UserSessions />;
       case 'ranking':
         return (
           <div className="p-6">
@@ -165,6 +163,28 @@ const CompleteDashboardPage = () => {
             </Card>
           </div>
         );
+      case 'profile':
+        return (
+          <div className="p-6">
+            <UserProfile 
+              user={user} 
+              onUpdateProfile={(data) => {
+                console.log('Perfil atualizado:', data);
+                // Aqui você implementaria a lógica para salvar no Supabase
+                toast({
+                  title: "Perfil atualizado!",
+                  description: "Suas informações foram salvas com sucesso.",
+                });
+              }}
+            />
+          </div>
+        );
+      case 'debug':
+        return (
+          <div className="p-6">
+            <DebugDataVerification />
+          </div>
+        );
       default:
         return (
           <div className="p-6">
@@ -181,10 +201,16 @@ const CompleteDashboardPage = () => {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
+      {/* Perfil do Usuário */}
       <div className="p-4 border-b border-border/20">
-        <div className="flex items-center gap-2">
-          <Heart className="h-6 w-6 text-primary" />
-          <h2 className="text-lg font-bold">Instituto dos Sonhos</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <UserIcon className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-white">{userName}</h3>
+            <p className="text-xs text-gray-400">{user?.email}</p>
+          </div>
         </div>
       </div>
       
@@ -253,7 +279,7 @@ const CompleteDashboardPage = () => {
           
           <div className="flex items-center gap-2">
             <Heart className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold hidden sm:block">Instituto dos Sonhos</h1>
+            <h1 className="text-xl font-bold hidden sm:block">Health Platform</h1>
           </div>
         </div>
         

@@ -1,553 +1,523 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import {
   Scale,
   Bluetooth,
+  Wifi, 
   CheckCircle2,
   AlertCircle,
   TrendingUp,
   TrendingDown,
   Activity,
-  Timer,
-  Zap,
   Heart,
-  Droplets,
-  Bone,
-  Brain,
   Target,
   Info,
-  Loader2
+  Zap,
+  Battery
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { xiaomiScaleService, XiaomiScaleData, AppBluetoothDevice } from '@/lib/xiaomi-scale-service';
-
-enum ConnectionStep {
-  IDLE = 'idle',
-  SCANNING = 'scanning',
-  PAIRING = 'pairing',
-  CALIBRATING = 'calibrating',
-  MEASURING = 'measuring',
-  CONFIRMING = 'confirming',
-  COMPLETED = 'completed'
-}
+import { xiaomiScaleService, XiaomiScaleData, XiaomiScaleDevice } from '@/lib/xiaomi-scale-service';
 
 interface XiaomiScaleIntegrationProps {
-  user: any;
-  onDataReceived?: (data: XiaomiScaleData) => void;
+  user: { id: string } | null;
 }
 
-export const XiaomiScaleIntegration: React.FC<XiaomiScaleIntegrationProps> = ({
-  user,
-  onDataReceived
-}) => {
-  const [currentStep, setCurrentStep] = useState<ConnectionStep>(ConnectionStep.IDLE);
-  const [devices, setDevices] = useState<AppBluetoothDevice[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<AppBluetoothDevice | null>(null);
-  const [scaleData, setScaleData] = useState<XiaomiScaleData | null>(null);
-  const [calibrationProgress, setCalibrationProgress] = useState(0);
-  const [measurementProgress, setMeasurementProgress] = useState(0);
-  const [pairingTime, setPairingTime] = useState(10);
-  const [calibrationTime, setCalibrationTime] = useState(5);
-  const [measurementTime, setMeasurementTime] = useState(5);
+const XiaomiScaleIntegration: React.FC<XiaomiScaleIntegrationProps> = ({ user }) => {
+  const [isScanning, setIsScanning] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isWeighing, setIsWeighing] = useState(false);
   const [bluetoothSupported, setBluetoothSupported] = useState(false);
-  const [height, setHeight] = useState<number | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [deviceInfo, setDeviceInfo] = useState<XiaomiScaleDevice | null>(null);
+  const [weighingData, setWeighingData] = useState<XiaomiScaleData | null>(null);
+  const [lastWeighing, setLastWeighing] = useState<{
+    peso_kg: number;
+    measurement_date: string;
+    imc?: number;
+  } | null>(null);
+  const [userPhysicalData, setUserPhysicalData] = useState<{
+    altura_cm: number;
+    idade: number;
+    sexo: string;
+  } | null>(null);
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     checkBluetoothSupport();
-    fetchUserProfile();
-  }, []);
-
-  // Timer para pairing
-  useEffect(() => {
-    if (currentStep === ConnectionStep.PAIRING && pairingTime > 0) {
-      const timer = setTimeout(() => setPairingTime(pairingTime - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (currentStep === ConnectionStep.PAIRING && pairingTime === 0) {
-      setCurrentStep(ConnectionStep.CALIBRATING);
-      setCalibrationTime(5);
+    if (user) {
+      fetchUserPhysicalData();
+      fetchLastWeighing();
     }
-  }, [currentStep, pairingTime]);
 
-  // Timer para calibração
-  useEffect(() => {
-    if (currentStep === ConnectionStep.CALIBRATING && calibrationTime > 0) {
-      const timer = setTimeout(() => setCalibrationTime(calibrationTime - 1), 1000);
-      setCalibrationProgress(((5 - calibrationTime) / 5) * 100);
-      return () => clearTimeout(timer);
-    } else if (currentStep === ConnectionStep.CALIBRATING && calibrationTime === 0) {
-      setCurrentStep(ConnectionStep.MEASURING);
-      setMeasurementTime(5);
-    }
-  }, [currentStep, calibrationTime]);
+    // Configurar callbacks do serviço
+    xiaomiScaleService.onData(handleScaleData);
+    xiaomiScaleService.onConnectionChange(handleConnectionChange);
 
-  // Timer para medição
-  useEffect(() => {
-    if (currentStep === ConnectionStep.MEASURING && measurementTime > 0) {
-      const timer = setTimeout(() => setMeasurementTime(measurementTime - 1), 1000);
-      setMeasurementProgress(((5 - measurementTime) / 5) * 100);
-      return () => clearTimeout(timer);
-    } else if (currentStep === ConnectionStep.MEASURING && measurementTime === 0) {
-      setCurrentStep(ConnectionStep.CONFIRMING);
-    }
-  }, [currentStep, measurementTime]);
+    return () => {
+      // Cleanup
+      xiaomiScaleService.disconnect();
+    };
+  }, [user]);
 
   const checkBluetoothSupport = () => {
-    const supported = 'bluetooth' in navigator;
-    setBluetoothSupported(supported);
-    if (!supported) {
-      toast({
-        title: "Bluetooth não suportado",
-        description: "Seu navegador não suporta Web Bluetooth API",
-        variant: "destructive"
-      });
+    if ('bluetooth' in navigator) {
+      setBluetoothSupported(true);
+    } else {
+      setBluetoothSupported(false);
     }
   };
 
-  const fetchUserProfile = async () => {
+  const fetchUserPhysicalData = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('user_physical_data')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
-      if (data && !error) {
-        setUserProfile(data);
-        setHeight(data.height);
-        
-        // Inicializar calculadora com dados do usuário
-        if (data.gender && data.age && data.height) {
-          xiaomiScaleService.initializeCalculator(
-            data.gender as 'male' | 'female',
-            data.age,
-            data.height
-          );
-        }
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user physical data:', error);
+      } else {
+        setUserPhysicalData(data);
       }
     } catch (error) {
-      console.error('Erro ao buscar perfil:', error);
+      console.error('Error:', error);
     }
   };
 
-  const startScanning = async () => {
-    setCurrentStep(ConnectionStep.SCANNING);
+  const fetchLastWeighing = async () => {
     try {
-      const foundDevices = await xiaomiScaleService.scanForDevices();
-      setDevices(foundDevices);
-      setCurrentStep(ConnectionStep.PAIRING);
-      setPairingTime(10);
+      const { data, error } = await supabase
+        .from('weight_measurements')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('measurement_date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching last weighing:', error);
+      } else {
+        setLastWeighing(data);
+      }
     } catch (error) {
-      console.error('Erro ao escanear dispositivos:', error);
-      toast({
-        title: "Erro ao escanear",
-        description: "Não foi possível encontrar dispositivos Bluetooth",
-        variant: "destructive"
-      });
-      setCurrentStep(ConnectionStep.IDLE);
+      console.error('Error:', error);
     }
   };
 
-  const selectDevice = async (device: AppBluetoothDevice) => {
-    setSelectedDevice(device);
-    try {
-      await xiaomiScaleService.connectToDevice(device.id);
-      await xiaomiScaleService.configureScale();
+  const handleConnectionChange = (connected: boolean) => {
+    setIsConnected(connected);
+    if (connected) {
+      const device = xiaomiScaleService.getDeviceInfo();
+      setDeviceInfo(device);
       
-      // Configurar callback para receber dados
-      xiaomiScaleService.onData((data) => {
-        setScaleData(data);
-        setCurrentStep(ConnectionStep.CONFIRMING);
+      // Obter nível da bateria
+      xiaomiScaleService.getBatteryLevel().then(level => {
+        setBatteryLevel(level);
       });
-      
-      setCurrentStep(ConnectionStep.CALIBRATING);
-      setCalibrationTime(5);
-    } catch (error) {
-      console.error('Erro ao conectar dispositivo:', error);
+
       toast({
-        title: "Erro de conexão",
-        description: "Não foi possível conectar à balança",
-        variant: "destructive"
+        title: "Balança Conectada! 🎉",
+        description: "Xiaomi Mi Body Scale 2 conectada com sucesso",
       });
-      setCurrentStep(ConnectionStep.IDLE);
+    } else {
+      setDeviceInfo(null);
+      setBatteryLevel(null);
+      toast({
+        title: "Balança Desconectada",
+        description: "A balança foi desconectada",
+        variant: "destructive",
+      });
     }
   };
 
-  const startMeasurement = async () => {
+  const handleScaleData = async (data: XiaomiScaleData) => {
+    console.log('Dados recebidos da balança:', data);
+    setWeighingData(data);
+    setIsWeighing(false);
+
+    // Salvar dados automaticamente
+    await saveWeighingData(data);
+
+    toast({
+      title: "Pesagem Concluída! 🎉",
+      description: `Peso: ${data.weight.toFixed(1)}kg registrado com sucesso`,
+    });
+  };
+
+  const connectToScale = async () => {
     try {
-      await xiaomiScaleService.startMeasurement();
+      setIsScanning(true);
+      
+      const device = await xiaomiScaleService.connect();
+      setDeviceInfo(device);
+      setIsConnected(true);
+
+      // Obter nível da bateria
+      const battery = await xiaomiScaleService.getBatteryLevel();
+      setBatteryLevel(battery);
+
     } catch (error) {
-      console.error('Erro ao iniciar medição:', error);
-      // Fallback para simulação
-      const mockData = xiaomiScaleService.simulateMeasurement();
-      setScaleData(mockData);
-      setCurrentStep(ConnectionStep.CONFIRMING);
+      console.error('Erro ao conectar com a balança:', error);
+      toast({
+        title: "Erro de Conexão",
+        description: error instanceof Error ? error.message : "Não foi possível conectar com a balança",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScanning(false);
     }
   };
 
-  const confirmMeasurement = async () => {
-    if (!scaleData) return;
-
+  const disconnectFromScale = async () => {
     try {
-      // Salvar dados da pesagem
-      const { error: weighingError } = await supabase
-        .from('weighings')
+      await xiaomiScaleService.disconnect();
+      setIsConnected(false);
+      setDeviceInfo(null);
+      setBatteryLevel(null);
+    } catch (error) {
+      console.error('Erro ao desconectar:', error);
+    }
+  };
+
+  const startWeighing = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Balança não conectada",
+        description: "Conecte-se a uma balança primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsWeighing(true);
+    toast({
+      title: "Iniciando Pesagem",
+      description: "Suba na balança descalço e mantenha-se imóvel",
+    });
+  };
+
+  const saveWeighingData = async (data: XiaomiScaleData) => {
+    if (!user || !userPhysicalData) return;
+
+    const bmi = calculateBMI(data.weight);
+    
+    try {
+      const { error } = await supabase
+        .from('weight_measurements')
         .insert({
-          user_id: user?.id,
-          weight: scaleData.weight,
-          body_fat: scaleData.body_fat,
-          muscle_mass: scaleData.muscle_mass,
-          body_water: scaleData.body_water,
-          bone_mass: scaleData.bone_mass,
-          basal_metabolism: scaleData.basal_metabolism,
-          metabolic_age: scaleData.metabolic_age,
-          visceral_fat: scaleData.visceral_fat,
-          impedance: scaleData.impedance,
-          created_at: scaleData.timestamp.toISOString()
+          user_id: user.id,
+          peso_kg: data.weight,
+          gordura_corporal_percent: data.bodyFat,
+          massa_muscular_kg: data.muscleMass,
+          agua_corporal_percent: data.bodyWater,
+          osso_kg: data.boneMass,
+          metabolismo_basal_kcal: data.basalMetabolism,
+          idade_metabolica: data.metabolicAge,
+          imc: bmi,
+          device_type: 'xiaomi_scale'
         });
 
-      if (weighingError) throw weighingError;
-
-      // Atualizar peso atual no perfil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ current_weight: scaleData.weight })
-        .eq('user_id', user?.id);
-
-      if (profileError) throw profileError;
-
-      toast({
-        title: "Pesagem salva!",
-        description: "Dados salvos com sucesso no sistema",
-      });
-
-      setCurrentStep(ConnectionStep.COMPLETED);
-      
-      // Chamar callback se fornecido
-      if (onDataReceived) {
-        onDataReceived(scaleData);
+      if (error) {
+        console.error('Error saving weighing data:', error);
+        throw error;
       }
 
+      // Refresh data
+      await fetchLastWeighing();
+      await fetchUserPhysicalData();
+
     } catch (error) {
-      console.error('Erro ao salvar dados:', error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar os dados da pesagem",
-        variant: "destructive"
-      });
+      console.error('Error saving data:', error);
+      throw error;
     }
   };
 
-  const resetProcess = () => {
-    setCurrentStep(ConnectionStep.IDLE);
-    setDevices([]);
-    setSelectedDevice(null);
-    setScaleData(null);
-    setCalibrationProgress(0);
-    setMeasurementProgress(0);
-    setPairingTime(10);
-    setCalibrationTime(5);
-    setMeasurementTime(5);
-    xiaomiScaleService.disconnect();
-  };
-
-  const calculateBMI = (weight: number, height: number): number => {
-    const heightInMeters = height / 100;
+  const calculateBMI = (weight: number) => {
+    if (!userPhysicalData?.altura_cm) return null;
+    const heightInMeters = userPhysicalData.altura_cm / 100;
     return weight / (heightInMeters * heightInMeters);
   };
 
-  const getBMIClassification = (bmi: number): string => {
-    if (bmi < 18.5) return 'Abaixo do peso';
-    if (bmi < 25) return 'Peso normal';
-    if (bmi < 30) return 'Sobrepeso';
-    return 'Obesidade';
+  const getWeightTrend = () => {
+    if (!weighingData || !lastWeighing) return null;
+    
+    const difference = weighingData.weight - lastWeighing.peso_kg;
+    if (Math.abs(difference) < 0.1) return 'stable';
+    return difference > 0 ? 'up' : 'down';
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case ConnectionStep.IDLE:
+  const getTrendIcon = () => {
+    const trend = getWeightTrend();
+    switch (trend) {
+      case 'up': return <TrendingUp className="h-4 w-4 text-red-500" />;
+      case 'down': return <TrendingDown className="h-4 w-4 text-green-500" />;
+      case 'stable': return <Activity className="h-4 w-4 text-blue-500" />;
+      default: return null;
+    }
+  };
+
+  const getBMIClassification = (bmi: number) => {
+    if (bmi < 18.5) return { text: 'Abaixo do peso', color: 'text-blue-500' };
+    if (bmi < 25) return { text: 'Peso normal', color: 'text-green-500' };
+    if (bmi < 30) return { text: 'Sobrepeso', color: 'text-yellow-500' };
+    return { text: 'Obesidade', color: 'text-red-500' };
+  };
+
         return (
-          <div className="text-center space-y-4">
-            <Scale className="h-16 w-16 text-muted-foreground mx-auto" />
-            <h3 className="text-xl font-semibold">Registrar Nova Pesagem</h3>
-            <p className="text-muted-foreground">
-              Conecte sua balança para capturar dados automaticamente
-            </p>
-            <Button 
-              onClick={startScanning}
-              disabled={!bluetoothSupported}
-              className="w-full"
-            >
-              <Bluetooth className="h-4 w-4 mr-2" />
-              Buscar Balança
-            </Button>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold flex items-center gap-3">
+          <Scale className="h-10 w-10 text-blue-600" />
+          Xiaomi Mi Body Scale 2
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Conecte sua balança inteligente e monitore sua evolução em tempo real
+        </p>
+      </div>
+
+      {/* Bluetooth Support Check */}
             {!bluetoothSupported && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Web Bluetooth não é suportado neste navegador. Use Chrome ou Edge.
+            Seu navegador não suporta Web Bluetooth API. Para usar esta funcionalidade, 
+            acesse através do Chrome ou Edge mais recente.
                 </AlertDescription>
               </Alert>
             )}
-          </div>
-        );
 
-      case ConnectionStep.SCANNING:
-        return (
-          <div className="text-center space-y-4">
-            <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin" />
-            <h3 className="text-xl font-semibold">Procurando balança...</h3>
-            <p className="text-muted-foreground">
-              Escaneando dispositivos Bluetooth próximos
-            </p>
+      {/* Connection Status */}
+      <Card className="health-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bluetooth className="h-5 w-5" />
+            Status da Conexão
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="font-medium">
+                {isConnected ? 'Conectado' : 'Desconectado'}
+              </span>
           </div>
-        );
+            <Badge variant={isConnected ? "default" : "secondary"}>
+              {isConnected ? 'Online' : 'Offline'}
+            </Badge>
+          </div>
 
-      case ConnectionStep.PAIRING:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold">Conexão Bluetooth</h3>
-              <p className="text-muted-foreground">Tempo total: 10 segundos</p>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <Timer className="h-4 w-4" />
-                <span className="font-mono">{pairingTime}s restantes</span>
+          {deviceInfo && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Dispositivo:</span>
+                <span className="font-medium">{deviceInfo.name}</span>
               </div>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Dispositivos Encontrados</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {devices.map((device) => (
-                  <div
-                    key={device.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedDevice?.id === device.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-muted hover:border-primary/50'
-                    }`}
-                    onClick={() => selectDevice(device)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Bluetooth className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">{device.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {device.type === 'xiaomi_mi_body_scale_2' ? 'Balança Inteligente' : 'Balança Bluetooth'}
-                          </p>
-                        </div>
-                      </div>
-                      {selectedDevice?.id === device.id && (
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
+              {batteryLevel !== null && (
+                <div className="flex items-center justify-between text-sm">
+                  <span>Bateria:</span>
+                  <div className="flex items-center gap-2">
+                    <Battery className="h-4 w-4" />
+                    <span className="font-medium">{batteryLevel}%</span>
                   </div>
-                ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isConnected && (
+            <div className="space-y-4">
+              <Button 
+                onClick={connectToScale}
+                disabled={isScanning}
+                className="w-full"
+              >
+                {isScanning ? 'Procurando...' : 'Conectar Balança'}
+              </Button>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Certifique-se de que sua balança Xiaomi está ligada e próxima ao dispositivo.
+                  A balança deve estar em modo de descoberta.
+                </AlertDescription>
+              </Alert>
+                        </div>
+          )}
+
+          {isConnected && (
+            <Button 
+              onClick={disconnectFromScale}
+              variant="outline"
+              className="w-full"
+            >
+              Desconectar
+            </Button>
+                      )}
               </CardContent>
             </Card>
-          </div>
-        );
 
-      case ConnectionStep.CALIBRATING:
-        return (
-          <div className="text-center space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold">Calibração da Balança</h3>
-              <p className="text-muted-foreground">Tempo: 5 segundos</p>
+      {/* Weighing Process */}
+      <Card className="health-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Scale className="h-5 w-5" />
+            Processo de Pesagem
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!isConnected ? (
+            <div className="text-center py-8">
+              <Scale className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Conecte-se a uma balança para iniciar a pesagem
+              </p>
             </div>
-
+          ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2">
+              {isWeighing && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 animate-pulse" />
-                <span>CALIBRANDO...</span>
+                    <span className="text-sm">Aguardando medição...</span>
+                  </div>
+                  <Progress value={50} className="w-full" />
               </div>
+              )}
               
-              <div className="space-y-2">
-                <Progress value={calibrationProgress} className="w-full" />
-                <p className="font-mono text-2xl font-bold">
-                  {calibrationTime > 0 ? calibrationTime : 'CALIBRAÇÃO CONCLUÍDA!'}
-                </p>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={startWeighing}
+                  disabled={isWeighing}
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                >
+                  {isWeighing ? (
+                    <>
+                      <Activity className="h-4 w-4 mr-2 animate-pulse" />
+                      Aguardando...
+                    </>
+                  ) : (
+                    <>
+                      <Scale className="h-4 w-4 mr-2" />
+                      Iniciar Pesagem
+                    </>
+                  )}
+                </Button>
+                
+                <Button variant="outline" size="icon">
+                  <Info className="h-4 w-4" />
+                </Button>
               </div>
 
-              {calibrationTime === 0 && (
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
-                    Suba na balança agora! Coloque sua altura aqui em cm
+                  Suba na balança descalço e mantenha-se imóvel até a pesagem completar.
+                  A medição será automática quando detectar seu peso.
                   </AlertDescription>
                 </Alert>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      {weighingData && (
+        <Card className="health-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              Resultados da Pesagem
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Main Weight Display */}
+            <div className="text-center p-6 bg-gradient-primary rounded-xl text-white">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h3 className="text-3xl font-bold">{weighingData.weight.toFixed(1)} kg</h3>
+                {getTrendIcon()}
+              </div>
+              {userPhysicalData?.altura_cm && (
+                <p className="text-lg opacity-90">
+                  IMC: {calculateBMI(weighingData.weight)?.toFixed(1)}
+                  {calculateBMI(weighingData.weight) && (
+                    <span className="ml-2 text-sm">
+                      ({getBMIClassification(calculateBMI(weighingData.weight)!).text})
+                    </span>
+                  )}
+                </p>
               )}
             </div>
-          </div>
-        );
 
-      case ConnectionStep.MEASURING:
-        return (
-          <div className="text-center space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold">Capturando Dados</h3>
-              <p className="text-muted-foreground">Mantenha-se imóvel na balança</p>
+            {/* Detailed Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <Heart className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Gordura Corporal</p>
+                <p className="text-xl font-bold">{weighingData.bodyFat?.toFixed(1)}%</p>
+          </div>
+              
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <Target className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Massa Muscular</p>
+                <p className="text-xl font-bold">{weighingData.muscleMass?.toFixed(1)}kg</p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2">
-                <Activity className="h-4 w-4 animate-pulse" />
-                <span>MEDINDO...</span>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <Wifi className="h-8 w-8 text-cyan-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Água Corporal</p>
+                <p className="text-xl font-bold">{weighingData.bodyWater?.toFixed(1)}%</p>
               </div>
               
-              <div className="space-y-2">
-                <Progress value={measurementProgress} className="w-full" />
-                <p className="font-mono text-2xl font-bold">
-                  {measurementTime > 0 ? measurementTime : 'MEDIÇÃO CONCLUÍDA!'}
-                </p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <Scale className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Massa Óssea</p>
+                <p className="text-xl font-bold">{weighingData.boneMass?.toFixed(1)}kg</p>
               </div>
             </div>
-          </div>
-        );
 
-      case ConnectionStep.CONFIRMING:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold">CONFIRMAÇÃO MANUAL</h3>
-              <p className="text-muted-foreground">Verifique os dados capturados</p>
+            {/* Additional Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-semibold mb-2">Metabolismo</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Metabolismo Basal:</span>
+                    <span className="font-medium">{weighingData.basalMetabolism} kcal</span>
             </div>
-
-            {scaleData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>DADOS DISPONÍVEIS</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <p className="text-2xl font-bold text-primary">
-                        {scaleData.weight} kg
-                      </p>
-                      <p className="text-sm text-muted-foreground">Peso</p>
-                    </div>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <p className="text-2xl font-bold text-primary">
-                        {height ? calculateBMI(scaleData.weight, height).toFixed(1) : '--'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">IMC</p>
-                    </div>
+                  <div className="flex justify-between">
+                    <span>Idade Metabólica:</span>
+                    <span className="font-medium">{weighingData.metabolicAge} anos</span>
                   </div>
-
-                  <Button 
-                    onClick={confirmMeasurement}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    SALVAR PESAGEM
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </div>
-        );
-
-      case ConnectionStep.COMPLETED:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-              <h3 className="text-xl font-semibold mt-4">DADOS CAPTURADOS</h3>
-              <p className="text-muted-foreground">Medição recebida!</p>
             </div>
 
-            {scaleData && (
-              <Card>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Scale className="h-4 w-4 text-primary" />
-                      <span className="text-sm">PESO:</span>
-                      <span className="font-bold">{scaleData.weight} kg</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <span className="text-sm">IMC:</span>
-                      <span className="font-bold">
-                        {height ? calculateBMI(scaleData.weight, height).toFixed(1) : '--'}
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-semibold mb-2">Comparação</h4>
+                <div className="space-y-2">
+                  {lastWeighing && (
+                    <div className="flex justify-between">
+                      <span>Variação:</span>
+                      <span className={`font-medium ${getWeightTrend() === 'down' ? 'text-green-500' : 'text-red-500'}`}>
+                        {(weighingData.weight - lastWeighing.peso_kg).toFixed(1)} kg
                       </span>
-                    </div>
-                    {scaleData.body_fat && (
-                      <div className="flex items-center gap-2">
-                        <Heart className="h-4 w-4 text-red-500" />
-                        <span className="text-sm">GORDURA:</span>
-                        <span className="font-bold">{scaleData.body_fat.toFixed(1)}%</span>
                       </div>
                     )}
-                    {scaleData.muscle_mass && (
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-yellow-500" />
-                        <span className="text-sm">MÚSCULO:</span>
-                        <span className="font-bold">{scaleData.muscle_mass} kg</span>
                       </div>
-                    )}
-                    {scaleData.body_water && (
-                      <div className="flex items-center gap-2">
-                        <Droplets className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm">ÁGUA:</span>
-                        <span className="font-bold">{scaleData.body_water.toFixed(1)}%</span>
                       </div>
-                    )}
-                    {scaleData.basal_metabolism && (
-                      <div className="flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-purple-500" />
-                        <span className="text-sm">METABOLISMO:</span>
-                        <span className="font-bold">{scaleData.basal_metabolism} kcal</span>
-                      </div>
-                    )}
-                    {scaleData.visceral_fat && (
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-orange-500" />
-                        <span className="text-sm">VISCERAL:</span>
-                        <span className="font-bold">{scaleData.visceral_fat.toFixed(1)}</span>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
               </Card>
             )}
-
-            <div className="flex gap-2">
-              <Button 
-                onClick={resetProcess}
-                variant="outline"
-                className="flex-1"
-              >
-                Nova Pesagem
-              </Button>
-              <Button 
-                onClick={() => onDataReceived && onDataReceived(scaleData!)}
-                className="flex-1"
-              >
-                Concluir
-              </Button>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {renderStepContent()}
     </div>
   );
 }; 
+
+export default XiaomiScaleIntegration; 

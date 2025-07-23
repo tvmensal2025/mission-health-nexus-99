@@ -1,304 +1,346 @@
-import { useState, useEffect } from "react";
-import { User } from "@supabase/supabase-js";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Target, Trophy, TrendingUp, Heart, Droplets, Zap, Moon, Scale } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { XiaomiScaleIntegration } from "@/components/weighing/XiaomiScaleIntegration";
+import React from 'react';
+import { 
+  LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip
+} from 'recharts';
+import { 
+  Heart, Activity, Droplets, Target, TrendingUp, Scale, 
+  Zap, Calendar, Award, Timer, Bluetooth
+} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { XiaomiScaleFlow } from '@/components/XiaomiScaleFlow';
 
-interface Profile {
-  id: string;
-  full_name: string | null;
-  current_weight: number | null;
-  target_weight: number | null;
-  height: number | null;
-}
+// Mock data
+const weightData = [
+  { date: '01/01', peso: 75.5, meta: 70 },
+  { date: '01/02', peso: 75.2, meta: 70 },
+  { date: '01/03', peso: 74.8, meta: 70 },
+  { date: '01/04', peso: 74.9, meta: 70 },
+  { date: '01/05', peso: 74.4, meta: 70 },
+  { date: '01/06', peso: 74.0, meta: 70 },
+  { date: '01/07', peso: 73.8, meta: 70 },
+];
 
-interface DashboardOverviewProps {
-  user: User | null;
-}
+const bodyComposition = [
+  { name: 'Massa Muscular', value: 35, color: '#10B981' },
+  { name: 'Gordura', value: 20, color: '#F59E0B' },
+  { name: 'Água', value: 45, color: '#3B82F6' },
+];
 
-const DashboardOverview = ({ user }: DashboardOverviewProps) => {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
+const weeklyStats = [
+  { day: 'Seg', exercicio: 45, hidratacao: 1.8, sono: 7.5 },
+  { day: 'Ter', exercicio: 30, hidratacao: 2.1, sono: 8.0 },
+  { day: 'Qua', exercicio: 60, hidratacao: 2.0, sono: 7.0 },
+  { day: 'Qui', exercicio: 40, hidratacao: 1.9, sono: 7.5 },
+  { day: 'Sex', exercicio: 50, hidratacao: 2.2, sono: 8.5 },
+  { day: 'Sab', exercicio: 75, hidratacao: 2.0, sono: 9.0 },
+  { day: 'Dom', exercicio: 35, hidratacao: 1.7, sono: 8.0 },
+];
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
+const chartConfig = {
+  peso: { label: 'Peso', color: '#F97316' },
+  meta: { label: 'Meta', color: '#10B981' },
+  exercicio: { label: 'Exercício (min)', color: '#3B82F6' },
+  hidratacao: { label: 'Hidratação (L)', color: '#06B6D4' },
+  sono: { label: 'Sono (h)', color: '#8B5CF6' },
   };
 
-  const calculateBMI = () => {
-    if (!profile?.current_weight || !profile?.height) return null;
-    const heightInMeters = profile.height / 100;
-    return (profile.current_weight / (heightInMeters * heightInMeters)).toFixed(1);
-  };
+const StatCard = ({ 
+  title, 
+  value, 
+  unit, 
+  change, 
+  icon: Icon, 
+  color,
+  description 
+}: {
+  title: string;
+  value: string | number;
+  unit?: string;
+  change?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  description?: string;
+}) => (
+  <Card className="stat-card">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        {title}
+      </CardTitle>
+      <Icon className={`h-4 w-4 ${color}`} />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-foreground">
+        {value}
+        {unit && <span className="text-base text-muted-foreground ml-1">{unit}</span>}
+      </div>
+      {change && (
+        <p className="text-xs text-muted-foreground">
+          {change}
+        </p>
+      )}
+      {description && (
+        <p className="text-xs text-muted-foreground mt-1">
+          {description}
+        </p>
+      )}
+    </CardContent>
+  </Card>
+);
 
-  const calculateProgress = () => {
-    if (!profile?.current_weight || !profile?.target_weight) return 0;
-    const initialWeight = profile.current_weight + 10; // Assumindo 10kg inicial para demonstração
-    const totalToLose = initialWeight - profile.target_weight;
-    const currentProgress = initialWeight - profile.current_weight;
-    return Math.max(0, Math.min(100, (currentProgress / totalToLose) * 100));
-  };
-
-  if (loading) {
+const DashboardOverview: React.FC = () => {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
-            ))}
-          </div>
+    <div className="p-6 space-y-6 animate-fade-up">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Acompanhe sua jornada de saúde</p>
+        </div>
+        <Button className="btn-gradient">
+          <Calendar className="w-4 h-4 mr-2" />
+          Hoje
+        </Button>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Peso Atual"
+          value="73.8"
+          unit="kg"
+          change="-1.7kg este mês"
+          icon={Scale}
+          color="text-primary"
+        />
+        <StatCard
+          title="IMC"
+          value="22.1"
+          change="Normal"
+          icon={Target}
+          color="text-success"
+          description="Faixa saudável"
+        />
+        <StatCard
+          title="Água Hoje"
+          value="1.8"
+          unit="L"
+          change="Meta: 2.0L"
+          icon={Droplets}
+          color="text-health-hydration"
+        />
+        <div className="stat-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pesagem
+            </CardTitle>
+            <Bluetooth className="h-6 w-6 text-blue-500" />
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="text-center mb-3">
+              <Scale className="h-12 w-12 text-primary mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Balança Xiaomi</p>
+            </div>
+            <XiaomiScaleFlow />
+          </CardContent>
         </div>
       </div>
-    );
-  }
 
-  const userName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
+      {/* Main Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Weight Evolution Chart */}
+        <Card className="health-card">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              <span>Evolução do Peso</span>
+            </CardTitle>
+            <CardDescription>
+              Últimos 7 dias - Meta: 70kg
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weightData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    domain={['dataMin - 1', 'dataMax + 1']}
+                  />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="peso" 
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="meta" 
+                    stroke="hsl(var(--success))"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Welcome Section */}
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold">Olá, {userName}! 👋</h1>
-        <p className="text-muted-foreground text-lg">
-          Bem-vindo de volta ao seu painel de transformação
-        </p>
+        {/* Body Composition */}
+        <Card className="health-card">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Zap className="w-5 h-5 text-accent" />
+              <span>Composição Corporal</span>
+            </CardTitle>
+            <CardDescription>
+              Análise atual do seu corpo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={bodyComposition}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}%`}
+                  >
+                    {bodyComposition.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Main Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="stat-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Peso Atual</CardTitle>
-            <Target className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {profile?.current_weight ? `${profile.current_weight} kg` : '--'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Meta: {profile?.target_weight ? `${profile.target_weight} kg` : 'Não definida'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">IMC</CardTitle>
-            <Heart className="h-4 w-4 text-health-heart" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {calculateBMI() || '--'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {calculateBMI() ? 
-                (parseFloat(calculateBMI()!) < 25 ? 'Normal' : 'Acima do peso') : 
-                'Dados incompletos'
-              }
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Progresso</CardTitle>
-            <TrendingUp className="h-4 w-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{calculateProgress().toFixed(0)}%</div>
-            <Progress value={calculateProgress()} className="mt-2" />
-          </CardContent>
-        </Card>
-
-        <Card className="stat-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Streak</CardTitle>
-            <Trophy className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">7 dias</div>
-            <p className="text-xs text-muted-foreground">
-              Continue assim!
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Today's Missions Preview */}
+      {/* Weekly Activity Chart */}
       <Card className="health-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            Missões de Hoje
+          <CardTitle className="flex items-center space-x-2">
+            <Activity className="w-5 h-5 text-health-steps" />
+            <span>Atividade Semanal</span>
           </CardTitle>
+          <CardDescription>
+            Exercício, hidratação e qualidade do sono
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Droplets className="h-6 w-6 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium">Hidratação</p>
-                <p className="text-xs text-muted-foreground">2/2 litros</p>
-              </div>
-              <Badge variant="secondary" className="ml-auto">✓</Badge>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Zap className="h-6 w-6 text-yellow-500" />
-              <div>
-                <p className="text-sm font-medium">Exercício</p>
-                <p className="text-xs text-muted-foreground">0/30 min</p>
-              </div>
-              <Badge variant="outline">Pendente</Badge>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Heart className="h-6 w-6 text-pink-500" />
-              <div>
-                <p className="text-sm font-medium">Mindfulness</p>
-                <p className="text-xs text-muted-foreground">0/10 min</p>
-              </div>
-              <Badge variant="outline">Pendente</Badge>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <Moon className="h-6 w-6 text-purple-500" />
-              <div>
-                <p className="text-sm font-medium">Sono</p>
-                <p className="text-xs text-muted-foreground">8 horas</p>
-              </div>
-              <Badge variant="secondary" className="ml-auto">✓</Badge>
-            </div>
-          </div>
-          
-          <div className="mt-4 flex gap-2">
-            <Button size="sm" className="bg-primary hover:bg-primary/90">
-              Ver Todas as Missões
-            </Button>
-            <Button size="sm" variant="outline">
-              Registrar Atividade
-            </Button>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyStats}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <Tooltip />
+                <Legend />
+                <Bar 
+                  dataKey="exercicio" 
+                  fill="hsl(var(--health-steps))"
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar 
+                  dataKey="hidratacao" 
+                  fill="hsl(var(--health-hydration))"
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar 
+                  dataKey="sono" 
+                  fill="hsl(var(--accent))"
+                  radius={[2, 2, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Progress Chart and Next Steps */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="health-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-secondary" />
-              Evolução do Peso
+      {/* Daily Goals Progress */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="mission-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center space-x-2">
+              <Heart className="w-4 h-4 text-health-heart" />
+              <span>Exercício Diário</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Gráfico de evolução será exibido aqui</p>
-              <Dialog open={isScaleModalOpen} onOpenChange={setIsScaleModalOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="mt-4">
-                    Registrar Nova Pesagem
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Scale className="h-5 w-5" />
-                      Balança Inteligente
-                    </DialogTitle>
-                  </DialogHeader>
-                  <XiaomiScaleIntegration 
-                    user={user}
-                    onDataReceived={(data) => {
-                      console.log('Dados da balança recebidos:', data);
-                      setIsScaleModalOpen(false);
-                      fetchProfile();
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>45 min</span>
+                <span>Meta: 30 min</span>
+              </div>
+              <Progress value={150} className="h-2" />
+              <p className="text-xs text-success font-medium">Meta superada! 🎉</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="health-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-accent" />
-              Próximas Atividades
+        <Card className="mission-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center space-x-2">
+              <Droplets className="w-4 h-4 text-health-hydration" />
+              <span>Hidratação</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">Sessão com Nutricionista</p>
-                <p className="text-xs text-muted-foreground">Hoje às 15:00</p>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>1.8 L</span>
+                <span>Meta: 2.0 L</span>
               </div>
+              <Progress value={90} className="h-2" />
+              <p className="text-xs text-muted-foreground">Falta apenas 200ml</p>
             </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <div className="w-2 h-2 bg-secondary rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">Avaliação Semanal</p>
-                <p className="text-xs text-muted-foreground">Amanhã</p>
+          </CardContent>
+        </Card>
+
+        <Card className="mission-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center space-x-2">
+              <Timer className="w-4 h-4 text-accent" />
+              <span>Sono</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>7.5 h</span>
+                <span>Meta: 8.0 h</span>
               </div>
+              <Progress value={94} className="h-2" />
+              <p className="text-xs text-muted-foreground">Quase na meta!</p>
             </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <div className="w-2 h-2 bg-accent rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium">Novo Curso Disponível</p>
-                <p className="text-xs text-muted-foreground">"Receitas Fit Deliciosas"</p>
-              </div>
-            </div>
-            
-            <Button size="sm" variant="outline" className="w-full">
-              Ver Calendário Completo
-            </Button>
           </CardContent>
         </Card>
       </div>
-
-      {/* Motivational Quote */}
-      <Card className="health-card bg-gradient-primary text-white">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <h3 className="text-xl font-bold mb-2">💪 Frase do Dia</h3>
-            <p className="text-lg italic">"O sucesso é a soma de pequenos esforços repetidos dia após dia."</p>
-            <p className="text-sm mt-2 opacity-90">- Robert Collier</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

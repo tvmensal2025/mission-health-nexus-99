@@ -15,7 +15,8 @@ import {
   DollarSign,
   Image as ImageIcon,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from "lucide-react";
 
 interface CourseModalProps {
@@ -28,20 +29,30 @@ interface CourseFormData {
   title: string;
   description: string;
   category: string;
-  price: number;
-  isActive: boolean;
-  coverImage?: File;
+  difficulty_level: string;
+  duration_minutes: number;
+  instructor_name: string;
+  is_premium: boolean;
+  is_published: boolean;
+  thumbnail_url?: string;
+  price?: number;
 }
 
 const categories = [
-  "Desenvolvimento Pessoal",
-  "Saúde e Bem-estar",
   "Nutrição",
-  "Fitness",
+  "Exercício",
+  "Mindset",
+  "Receitas",
+  "Saúde",
+  "Bem-estar",
   "Meditação",
-  "Terapia",
-  "Coaching",
-  "Educação"
+  "Terapia"
+];
+
+const difficultyLevels = [
+  { value: "beginner", label: "Iniciante" },
+  { value: "intermediate", label: "Intermediário" },
+  { value: "advanced", label: "Avançado" }
 ];
 
 export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => {
@@ -49,8 +60,12 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
     title: "",
     description: "",
     category: "",
-    price: 0,
-    isActive: true
+    difficulty_level: "beginner",
+    duration_minutes: 60,
+    instructor_name: "",
+    is_premium: false,
+    is_published: true,
+    price: 0
   });
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +108,15 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
       newErrors.category = "Categoria é obrigatória";
     }
 
-    if (formData.price < 0) {
+    if (!formData.instructor_name.trim()) {
+      newErrors.instructor_name = "Nome do instrutor é obrigatório";
+    }
+
+    if (formData.duration_minutes <= 0) {
+      newErrors.duration_minutes = "Duração deve ser maior que zero";
+    }
+
+    if (formData.price && formData.price < 0) {
       newErrors.price = "Preço não pode ser negativo";
     }
 
@@ -110,7 +133,9 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
     try {
       const courseData = {
         ...formData,
-        coverImage: coverImage || undefined
+        // Aqui você poderia fazer upload da imagem para um serviço de armazenamento
+        // e então atribuir a URL ao thumbnail_url
+        thumbnail_url: coverImage ? URL.createObjectURL(coverImage) : undefined
       };
       
       await onSubmit(courseData);
@@ -120,8 +145,12 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
         title: "",
         description: "",
         category: "",
-        price: 0,
-        isActive: true
+        difficulty_level: "beginner",
+        duration_minutes: 60,
+        instructor_name: "",
+        is_premium: false,
+        is_published: true,
+        price: 0
       });
       setCoverImage(null);
       setErrors({});
@@ -139,8 +168,12 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
         title: "",
         description: "",
         category: "",
-        price: 0,
-        isActive: true
+        difficulty_level: "beginner",
+        duration_minutes: 60,
+        instructor_name: "",
+        is_premium: false,
+        is_published: true,
+        price: 0
       });
       setCoverImage(null);
       setErrors({});
@@ -200,7 +233,7 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
             )}
           </div>
 
-          {/* Categoria e Preço */}
+          {/* Categoria e Nível de Dificuldade */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category" className="text-sm font-medium text-gray-300">
@@ -227,32 +260,99 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price" className="text-sm font-medium text-gray-300">
-                💰 Preço
+              <Label htmlFor="difficulty_level" className="text-sm font-medium text-gray-300">
+                🎯 Nível de Dificuldade
+              </Label>
+              <Select 
+                value={formData.difficulty_level} 
+                onValueChange={(value) => handleInputChange("difficulty_level", value)}
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Selecione o nível" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  {difficultyLevels.map((level) => (
+                    <SelectItem key={level.value} value={level.value} className="text-white hover:bg-gray-700">
+                      {level.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Duração e Instrutor */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="duration_minutes" className="text-sm font-medium text-gray-300">
+                ⏱️ Duração (minutos)
               </Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  id="price"
+                  id="duration_minutes"
                   type="number"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
+                  value={formData.duration_minutes}
+                  onChange={(e) => handleInputChange("duration_minutes", parseInt(e.target.value) || 0)}
+                  placeholder="60"
                   className="pl-10 bg-gray-800 border-gray-600 text-white"
                 />
               </div>
-              {formData.price === 0 && (
-                <Badge variant="outline" className="text-green-400 border-green-400">
-                  Gratuito
-                </Badge>
-              )}
-              {errors.price && (
+              {errors.duration_minutes && (
                 <div className="flex items-center gap-1 text-red-400 text-sm">
                   <AlertCircle className="h-4 w-4" />
-                  {errors.price}
+                  {errors.duration_minutes}
                 </div>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instructor_name" className="text-sm font-medium text-gray-300">
+                👨‍🏫 Instrutor
+              </Label>
+              <Input
+                id="instructor_name"
+                value={formData.instructor_name}
+                onChange={(e) => handleInputChange("instructor_name", e.target.value)}
+                placeholder="Nome do instrutor"
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              />
+              {errors.instructor_name && (
+                <div className="flex items-center gap-1 text-red-400 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {errors.instructor_name}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Preço */}
+          <div className="space-y-2">
+            <Label htmlFor="price" className="text-sm font-medium text-gray-300">
+              💰 Preço
+            </Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="price"
+                type="number"
+                value={formData.price}
+                onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
+                placeholder="0.00"
+                className="pl-10 bg-gray-800 border-gray-600 text-white"
+              />
+            </div>
+            {formData.price === 0 && (
+              <Badge variant="outline" className="text-green-400 border-green-400">
+                Gratuito
+              </Badge>
+            )}
+            {errors.price && (
+              <div className="flex items-center gap-1 text-red-400 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {errors.price}
+              </div>
+            )}
           </div>
 
           {/* Imagem de Capa */}
@@ -286,17 +386,31 @@ export const CourseModal = ({ isOpen, onClose, onSubmit }: CourseModalProps) => 
             )}
           </div>
 
-          {/* Curso Ativo */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="isActive" className="text-sm font-medium text-gray-300">
-              ✅ Curso Ativo
-            </Label>
-            <Switch
-              id="isActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) => handleInputChange("isActive", checked)}
-              className="data-[state=checked]:bg-red-500"
-            />
+          {/* Opções de Publicação */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Label htmlFor="is_premium" className="text-sm font-medium text-gray-300">
+                ✨ Conteúdo Premium
+              </Label>
+              <Switch
+                id="is_premium"
+                checked={formData.is_premium}
+                onCheckedChange={(checked) => handleInputChange("is_premium", checked)}
+                className="data-[state=checked]:bg-yellow-500"
+              />
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Label htmlFor="is_published" className="text-sm font-medium text-gray-300">
+                🌐 Publicar Curso
+              </Label>
+              <Switch
+                id="is_published"
+                checked={formData.is_published}
+                onCheckedChange={(checked) => handleInputChange("is_published", checked)}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
           </div>
         </div>
 

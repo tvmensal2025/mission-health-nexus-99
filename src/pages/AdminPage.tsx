@@ -20,13 +20,17 @@ import {
   Scale,
   Monitor,
   HelpCircle,
-  Database
+  Database,
+  CreditCard
 } from "lucide-react";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import UserManagement from "@/components/admin/UserManagement";
 import WeighingMonitoring from "@/components/admin/WeighingMonitoring";
 import AdvancedReports from "@/components/admin/AdvancedReports";
 import { CourseManagement } from "@/components/admin/CourseManagement";
+import IntegrationManagementPanel from "@/components/admin/PaymentManagementPanel";
+import SessionManagement from "@/components/admin/SessionManagement";
+import SystemStatus from "@/components/SystemStatus";
 
 const AdminPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -112,12 +116,14 @@ const AdminPage = () => {
     { id: 'weighings', icon: Scale, label: 'Monitoramento de Pesagens', color: 'text-purple-500', description: 'Acompanhar todas as pesagens' },
     { id: 'reports', icon: TrendingUp, label: 'Análises e Relatórios', color: 'text-green-500', description: 'Relatórios avançados e insights' },
     { id: 'courses', icon: BookOpen, label: 'Gestão de Cursos', color: 'text-orange-500', description: 'Gerenciar cursos e conteúdo' },
-    { id: 'sessions', icon: FileText, label: 'Gestão de Sessões', color: 'text-cyan-500', description: 'Gerenciar sessões e consultas' },
+    { id: 'payments', icon: CreditCard, label: 'Gestão de Pagamentos', color: 'text-emerald-500', description: 'Gestão Asaas e assinaturas' },
+    { id: 'sessions', icon: FileText, label: 'Gestão de Sessões', color: 'text-cyan-500', description: 'Criar e enviar sessões personalizadas' },
     { id: 'devices', icon: Monitor, label: 'Gestão de Dispositivos', color: 'text-indigo-500', description: 'Dispositivos conectados' },
     { id: 'settings', icon: Settings, label: 'Configurações do Sistema', color: 'text-red-500', description: 'Configurações gerais' },
     { id: 'security', icon: Shield, label: 'Segurança e Auditoria', color: 'text-yellow-500', description: 'Logs e segurança' },
     { id: 'support', icon: HelpCircle, label: 'Suporte e Ajuda', color: 'text-pink-500', description: 'Central de suporte' },
     { id: 'backup', icon: Database, label: 'Backup e Manutenção', color: 'text-gray-500', description: 'Backup e manutenção' },
+    { id: 'system', icon: Database, label: 'Status do Sistema', color: 'text-blue-500', description: 'Verificar funcionamento' },
   ];
 
   if (loading) {
@@ -149,8 +155,10 @@ const AdminPage = () => {
         return <AdvancedReports />;
       case 'courses':
         return <CourseManagement />;
+      case 'payments':
+        return <IntegrationManagementPanel />;
       case 'sessions':
-        return <div className="text-center py-8 text-muted-foreground">Gestão de Sessões em desenvolvimento...</div>;
+        return <SessionManagement />;
       case 'devices':
         return <div className="text-center py-8 text-muted-foreground">Gestão de Dispositivos em desenvolvimento...</div>;
       case 'settings':
@@ -161,6 +169,8 @@ const AdminPage = () => {
         return <div className="text-center py-8 text-muted-foreground">Suporte e Ajuda em desenvolvimento...</div>;
       case 'backup':
         return <div className="text-center py-8 text-muted-foreground">Backup e Manutenção em desenvolvimento...</div>;
+      case 'system':
+        return <SystemStatus />;
       default:
         return <AdminDashboard />;
     }
@@ -212,19 +222,14 @@ const AdminPage = () => {
                   >
                     <Icon className={`h-5 w-5 ${isActive ? 'text-primary-foreground' : item.color}`} />
                     <div className="flex-1">
-                      <div className={`font-medium text-sm ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>
-                        {item.label}
-                      </div>
-                      <div className={`text-xs ${isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                        {item.description}
-                      </div>
+                      <div className={`font-medium text-sm ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{item.label}</div>
+                      <div className={`text-xs ${isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{item.description}</div>
                     </div>
                   </button>
                 );
               })}
             </nav>
           </div>
-          
           {/* Quick Actions in Sidebar */}
           <div className="p-4 border-t border-border/20 mt-4">
             <h3 className="text-sm font-semibold mb-3 text-foreground">Ações Rápidas</h3>
@@ -244,7 +249,6 @@ const AdminPage = () => {
             </div>
           </div>
         </aside>
-
         {/* Main Content */}
         <main className="flex-1 p-8">
           {renderContent()}

@@ -56,7 +56,7 @@ export const QuizModal = ({ isOpen, onClose, onSubmit, lessons }: QuizModalProps
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: keyof QuizFormData, value: any) => {
+  const handleInputChange = (field: keyof QuizFormData, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -71,7 +71,7 @@ export const QuizModal = ({ isOpen, onClose, onSubmit, lessons }: QuizModalProps
     }
   };
 
-  const handleQuestionChange = (questionId: string, field: keyof QuizQuestion, value: any) => {
+  const handleQuestionChange = (questionId: string, field: keyof QuizQuestion, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       questions: prev.questions.map(question => 

@@ -50,7 +50,7 @@ export const JourneyModal = ({ isOpen, onClose, onSubmit }: JourneyModalProps) =
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: keyof JourneyFormData, value: any) => {
+  const handleInputChange = (field: keyof JourneyFormData, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -65,7 +65,7 @@ export const JourneyModal = ({ isOpen, onClose, onSubmit }: JourneyModalProps) =
     }
   };
 
-  const handleItemChange = (itemId: string, field: keyof JourneyItem, value: any) => {
+  const handleItemChange = (itemId: string, field: keyof JourneyItem, value: string | number | File) => {
     setFormData(prev => ({
       ...prev,
       items: prev.items.map(item => 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, Activity, GraduationCap, FileText, Trophy, ClipboardList, 
   Calendar, Target, Award, Settings, BarChart3, Scale, CreditCard, 
@@ -11,12 +11,13 @@ import { cn } from '@/lib/utils';
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  onShowCoursePlatform?: () => void;
 }
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
   { id: 'inicio', label: 'Missão do Dia', icon: Zap, path: '/missions', highlight: true },
-  { id: 'plataforma-sonhos', label: 'Plataforma dos Sonhos', icon: GraduationCap, path: '/courses' },
+  { id: 'plataforma-sonhos', label: 'Plataforma dos Sonhos', icon: GraduationCap, path: '/app/courses' },
   { id: 'sessoes', label: 'Sessões', icon: FileText, path: '/sessions' },
   { id: 'ranking', label: 'Ranking', icon: Trophy, path: '/ranking' },
   { id: 'avaliacoes', label: 'Avaliações', icon: ClipboardList, path: '/assessments' },
@@ -35,7 +36,29 @@ const menuItems = [
   { id: 'ajuda', label: 'Ajuda', icon: HelpCircle, path: '/help' }
 ];
 
-export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, onShowCoursePlatform }: SidebarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavigation = (item: any) => {
+    // Se for "Plataforma dos Sonhos", apenas chamar a função onShowCoursePlatform sem navegar
+    if (item.id === 'plataforma-sonhos') {
+      if (onShowCoursePlatform) {
+        onShowCoursePlatform();
+      }
+    } else if (item.id === 'dashboard') {
+      // Para o dashboard, navegar mas não resetar a seção ativa
+      navigate('/');
+    } else {
+      navigate(item.path);
+    }
+    
+    // Close sidebar on mobile after navigation
+    if (window.innerWidth < 1024) {
+      onToggle();
+    }
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -79,23 +102,17 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
-              <NavLink
+              <button
                 key={item.id}
-                to={item.path}
-                className={({ isActive }) => cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-lg transition-smooth text-sm font-medium",
+                onClick={() => handleNavigation(item)}
+                className={cn(
+                  "flex items-center space-x-3 px-4 py-3 rounded-lg transition-smooth text-sm font-medium w-full text-left",
                   "hover:bg-muted/50 group",
-                  isActive 
+                  (location.pathname === item.path || (item.id === 'plataforma-sonhos' && location.pathname === '/app/courses'))
                     ? "bg-primary text-primary-foreground shadow-glow" 
                     : "text-foreground/80",
-                  item.highlight && !isActive && "bg-accent/10 text-accent border border-accent/20"
+                  item.highlight && !(location.pathname === item.path || (item.id === 'plataforma-sonhos' && location.pathname === '/app/courses')) && "bg-accent/10 text-accent border border-accent/20"
                 )}
-                onClick={() => {
-                  // Close sidebar on mobile after navigation
-                  if (window.innerWidth < 1024) {
-                    onToggle();
-                  }
-                }}
               >
                 <Icon className={cn(
                   "w-5 h-5 transition-smooth",
@@ -105,7 +122,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 {item.highlight && (
                   <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 )}
-              </NavLink>
+              </button>
             );
           })}
         </nav>

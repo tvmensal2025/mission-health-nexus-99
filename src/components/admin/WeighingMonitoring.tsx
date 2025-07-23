@@ -1,75 +1,74 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
+  Scale, 
   Search, 
   Filter, 
-  Scale,
-  AlertTriangle,
-  Download,
-  Calendar,
   TrendingUp,
-  Eye
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  TrendingDown,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface WeightMeasurement {
+interface MeasurementData {
   id: string;
   user_id: string;
   peso_kg: number;
-  imc: number | null;
-  gordura_corporal_percent: number | null;
-  massa_muscular_kg: number | null;
-  device_type: string;
+  imc?: number;
   measurement_date: string;
-  profiles?: {
-    full_name: string | null;
-    email: string | null;
-  } | null;
+  device_type: string;
+  status: 'normal' | 'warning' | 'critical';
 }
 
-export const WeighingMonitoring = () => {
-  const [measurements, setMeasurements] = useState<WeightMeasurement[]>([]);
-  const [filteredMeasurements, setFilteredMeasurements] = useState<WeightMeasurement[]>([]);
+const WeighingMonitoring: React.FC = () => {
+  const [measurements, setMeasurements] = useState<MeasurementData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("today");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'normal' | 'warning' | 'critical'>('all');
 
   useEffect(() => {
     fetchMeasurements();
   }, []);
 
-  useEffect(() => {
-    filterMeasurements();
-  }, [measurements, searchTerm, dateFilter]);
-
   const fetchMeasurements = async () => {
     try {
       setLoading(true);
+
       const { data, error } = await supabase
         .from('weight_measurements')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .order('measurement_date', { ascending: false })
-        .limit(100);
+        .limit(50);
 
-      if (error) throw error;
-      setMeasurements((data as any) || []);
+      if (error) {
+        console.error('Error fetching measurements:', error);
+        return;
+      }
+
+      // Processar dados e adicionar status
+      const processedData: MeasurementData[] = (data || []).map(measurement => {
+        let status: 'normal' | 'warning' | 'critical' = 'normal';
+        
+        // Determinar status baseado no IMC
+        if (measurement.imc) {
+          if (measurement.imc >= 30) status = 'critical';
+          else if (measurement.imc >= 25) status = 'warning';
+        }
+
+        return {
+          ...measurement,
+          status
+        };
+      });
+
+      setMeasurements(processedData);
+
     } catch (error) {
       console.error('Error fetching measurements:', error);
     } finally {
@@ -77,171 +76,103 @@ export const WeighingMonitoring = () => {
     }
   };
 
-  const filterMeasurements = () => {
-    let filtered = measurements;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(m => 
-        m.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by date
-    const now = new Date();
-    switch (dateFilter) {
-      case "today":
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        filtered = filtered.filter(m => new Date(m.measurement_date) >= today);
-        break;
-      case "week":
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(m => new Date(m.measurement_date) >= weekAgo);
-        break;
-      case "month":
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(m => new Date(m.measurement_date) >= monthAgo);
-        break;
-    }
-
-    setFilteredMeasurements(filtered);
-  };
-
-  const getWeightStatus = (weight: number, imc: number | null) => {
-    if (!imc) return "normal";
-    
-    if (imc < 18.5) return "baixo";
-    if (imc >= 18.5 && imc < 25) return "normal";
-    if (imc >= 25 && imc < 30) return "sobrepeso";
-    return "obesidade";
-  };
+  const filteredMeasurements = measurements.filter(measurement => {
+    const matchesSearch = measurement.user_id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || measurement.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "baixo":
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Baixo Peso</Badge>;
-      case "normal":
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Normal</Badge>;
-      case "sobrepeso":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Sobrepeso</Badge>;
-      case "obesidade":
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Obesidade</Badge>;
+      case 'normal':
+        return <Badge variant="default" className="bg-green-100 text-green-800">Normal</Badge>;
+      case 'warning':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Atenção</Badge>;
+      case 'critical':
+        return <Badge variant="destructive">Crítico</Badge>;
       default:
-        return <Badge variant="outline">N/A</Badge>;
+        return <Badge variant="outline">Desconhecido</Badge>;
     }
   };
 
-  const getDeviceBadge = (deviceType: string) => {
-    switch (deviceType) {
-      case "xiaomi_mi_body_scale_2":
-        return <Badge variant="outline" className="text-orange-600 border-orange-200">Xiaomi</Badge>;
-      case "bluetooth_scale":
-        return <Badge variant="outline" className="text-blue-600 border-blue-200">Bluetooth</Badge>;
-      case "manual":
-        return <Badge variant="outline" className="text-gray-600 border-gray-200">Manual</Badge>;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'normal':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case 'critical':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
       default:
-        return <Badge variant="outline">Outro</Badge>;
+        return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  const stats = {
-    today: filteredMeasurements.filter(m => {
-      const today = new Date();
-      const measurementDate = new Date(m.measurement_date);
-      return measurementDate.toDateString() === today.toDateString();
-    }).length,
-    week: filteredMeasurements.filter(m => {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      return new Date(m.measurement_date) >= weekAgo;
-    }).length,
-    suspicious: filteredMeasurements.filter(m => {
-      return m.peso_kg < 30 || m.peso_kg > 200 || (m.imc && (m.imc < 15 || m.imc > 50));
-    }).length,
-    incomplete: filteredMeasurements.filter(m => {
-      return !m.gordura_corporal_percent || !m.massa_muscular_kg;
-    }).length
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getBMIClassification = (bmi: number) => {
+    if (bmi < 18.5) return { text: 'Abaixo do peso', color: 'text-blue-500' };
+    if (bmi < 25) return { text: 'Peso normal', color: 'text-green-500' };
+    if (bmi < 30) return { text: 'Sobrepeso', color: 'text-yellow-500' };
+    return { text: 'Obesidade', color: 'text-red-500' };
   };
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <Card>
+        <div className="flex items-center justify-between">
+          <div className="h-8 bg-muted rounded w-48"></div>
+          <div className="h-10 bg-muted rounded w-32"></div>
+        </div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
           <CardContent className="p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-muted rounded w-1/4"></div>
-              <div className="h-4 bg-muted rounded w-1/2"></div>
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-12 bg-muted rounded"></div>
-                ))}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded w-32"></div>
+                    <div className="h-3 bg-muted rounded w-24"></div>
               </div>
+                  <div className="h-6 bg-muted rounded w-16"></div>
             </div>
           </CardContent>
         </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Monitoramento de Pesagens
-          </h1>
-          <p className="text-muted-foreground">Acompanhe todas as pesagens do sistema</p>
+          <h1 className="text-3xl font-bold">Monitoramento de Pesagens</h1>
+          <p className="text-muted-foreground">
+            {measurements.length} medições monitoradas
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
+        <Button>
+          <Scale className="h-4 w-4 mr-2" />
+          Exportar Relatório
           </Button>
-          <Button size="sm">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Ver Alertas
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.today}</div>
-            <div className="text-sm text-muted-foreground">Pesagens Hoje</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.week}</div>
-            <div className="text-sm text-muted-foreground">Esta Semana</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.suspicious}</div>
-            <div className="text-sm text-muted-foreground">Valores Suspeitos</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.incomplete}</div>
-            <div className="text-sm text-muted-foreground">Dados Incompletos</div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtros e Busca</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <div className="flex gap-4 items-center">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por usuário..."
                 value={searchTerm}
@@ -251,100 +182,145 @@ export const WeighingMonitoring = () => {
             </div>
             <div className="flex gap-2">
               <Button 
-                variant={dateFilter === "today" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setDateFilter("today")}
+                variant={filterStatus === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('all')}
               >
-                Hoje
+                Todos
+              </Button>
+              <Button
+                variant={filterStatus === 'normal' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('normal')}
+              >
+                Normal
               </Button>
               <Button 
-                variant={dateFilter === "week" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setDateFilter("week")}
+                variant={filterStatus === 'warning' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('warning')}
               >
-                7 Dias
+                Atenção
               </Button>
               <Button 
-                variant={dateFilter === "month" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setDateFilter("month")}
+                variant={filterStatus === 'critical' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('critical')}
               >
-                30 Dias
+                Crítico
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Measurements Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scale className="h-5 w-5" />
-            Pesagens ({filteredMeasurements.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Peso</TableHead>
-                <TableHead>IMC</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Dispositivo</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMeasurements.map((measurement) => {
-                const status = getWeightStatus(measurement.peso_kg, measurement.imc);
-                const isSuspicious = measurement.peso_kg < 30 || measurement.peso_kg > 200 || 
-                  (measurement.imc && (measurement.imc < 15 || measurement.imc > 50));
-                
-                return (
-                  <TableRow key={measurement.id} className={isSuspicious ? "bg-red-50 dark:bg-red-950/20" : ""}>
-                    <TableCell className="font-medium">
+      {/* Measurements List */}
+      <div className="space-y-4">
+        {filteredMeasurements.map((measurement) => (
+          <Card key={measurement.id}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center">
+                    <Scale className="h-6 w-6" />
+                  </div>
                       <div>
-                        <div>{measurement.profiles?.full_name || "Nome não informado"}</div>
-                        <div className="text-xs text-muted-foreground">{measurement.profiles?.email}</div>
+                    <h3 className="font-semibold">
+                      Usuário {measurement.user_id.slice(0, 8)}...
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Activity className="h-4 w-4" />
+                        {measurement.peso_kg}kg
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {measurement.peso_kg} kg
-                        {isSuspicious && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {measurement.imc ? measurement.imc.toFixed(1) : "N/A"}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(status)}</TableCell>
-                    <TableCell>{getDeviceBadge(measurement.device_type)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {new Date(measurement.measurement_date).toLocaleDateString('pt-BR')}
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(measurement.measurement_date).toLocaleTimeString('pt-BR', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
+                      {measurement.imc && (
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="h-4 w-4" />
+                          IMC: {measurement.imc.toFixed(1)}
+                          <span className={getBMIClassification(measurement.imc).color}>
+                            ({getBMIClassification(measurement.imc).text})
+                          </span>
                         </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {formatDate(measurement.measurement_date)}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {getStatusIcon(measurement.status)}
+                  {getStatusBadge(measurement.status)}
+                  <Button variant="outline" size="sm">
+                    Ver Detalhes
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Medições</CardTitle>
+            <Scale className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{measurements.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Medições registradas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Status Normal</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {measurements.filter(m => m.status === 'normal').length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sem alertas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Atenção</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {measurements.filter(m => m.status === 'warning').length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Requer monitoramento
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Crítico</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {measurements.filter(m => m.status === 'critical').length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Intervenção necessária
+            </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
+
+export default WeighingMonitoring;

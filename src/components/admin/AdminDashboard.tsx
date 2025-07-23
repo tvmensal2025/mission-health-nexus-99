@@ -1,223 +1,177 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Users, 
   Scale, 
+  Activity, 
   TrendingUp, 
-  Activity,
-  Heart,
-  Target,
   Calendar,
-  AlertTriangle,
-  Smartphone
-} from "lucide-react";
+  BarChart3,
+  Heart,
+  Smartphone,
+  Settings,
+  Wifi
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface DashboardStats {
+interface AdminStats {
   totalUsers: number;
-  activeUsers7Days: number;
-  activeUsers30Days: number;
-  weighingsToday: number;
-  weighingsWeek: number;
-  weighingsMonth: number;
-  averageWeight: number;
-  averageIMC: number;
-  connectedDevices: number;
-  criticalAlerts: number;
+  totalMeasurements: number;
+  activeUsers: number;
+  averageMeasurementsPerUser: number;
+  recentActivity: number;
+  dataQuality: number;
 }
 
-export const AdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({
+interface IntegrationStats {
+  totalIntegrations: number;
+  activeIntegrations: number;
+  syncedToday: number;
+  errorCount: number;
+}
+
+const AdminDashboard: React.FC = () => {
+  const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
-    activeUsers7Days: 0,
-    activeUsers30Days: 0,
-    weighingsToday: 0,
-    weighingsWeek: 0,
-    weighingsMonth: 0,
-    averageWeight: 0,
-    averageIMC: 0,
-    connectedDevices: 0,
-    criticalAlerts: 0
+    totalMeasurements: 0,
+    activeUsers: 0,
+    averageMeasurementsPerUser: 0,
+    recentActivity: 0,
+    dataQuality: 0
   });
+  
+  const [integrationStats, setIntegrationStats] = useState<IntegrationStats>({
+    totalIntegrations: 0,
+    activeIntegrations: 0,
+    syncedToday: 0,
+    errorCount: 0
+  });
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardStats();
+    fetchAdminStats();
+    fetchIntegrationStats();
   }, []);
 
-  const fetchDashboardStats = async () => {
+  const fetchAdminStats = async () => {
     try {
       setLoading(true);
-      
-      // Total de usuários
-      const { count: totalUsers } = await supabase
+
+      // Buscar usuários da tabela profiles
+      const { data: users, error: usersError } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('id, user_id, full_name, email, created_at');
 
-      // Pesagens hoje
-      const today = new Date().toISOString().split('T')[0];
-      const { count: weighingsToday } = await supabase
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        return;
+      }
+
+      // Buscar medições
+      const { data: measurements, error: measurementsError } = await supabase
         .from('weight_measurements')
-        .select('*', { count: 'exact', head: true })
-        .gte('measurement_date', today);
+        .select('user_id, measurement_date, peso_kg, gordura_corporal_percent');
 
-      // Pesagens esta semana
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const { count: weighingsWeek } = await supabase
-        .from('weight_measurements')
-        .select('*', { count: 'exact', head: true })
-        .gte('measurement_date', weekAgo.toISOString());
+      if (measurementsError) {
+        console.error('Error fetching measurements:', measurementsError);
+        return;
+      }
 
-      // Pesagens este mês
-      const monthAgo = new Date();
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
-      const { count: weighingsMonth } = await supabase
-        .from('weight_measurements')
-        .select('*', { count: 'exact', head: true })
-        .gte('measurement_date', monthAgo.toISOString());
+      // Calcular estatísticas
+      const totalUsers = users?.length || 0;
+      const totalMeasurements = measurements?.length || 0;
+      
+      // Usuários ativos (últimos 30 dias)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const activeUsers = new Set(
+        measurements?.filter(m => new Date(m.measurement_date) >= thirtyDaysAgo)
+          .map(m => m.user_id) || []
+      ).size;
 
-      // Peso médio
-      const { data: avgWeightData } = await supabase
-        .from('weight_measurements')
-        .select('peso_kg')
-        .not('peso_kg', 'is', null);
+      // Média de medições por usuário
+      const averageMeasurementsPerUser = totalUsers > 0 ? totalMeasurements / totalUsers : 0;
 
-      const averageWeight = avgWeightData?.length 
-        ? avgWeightData.reduce((sum, item) => sum + (item.peso_kg || 0), 0) / avgWeightData.length
-        : 0;
+      // Atividade recente (últimos 7 dias)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recentActivity = measurements?.filter(m => 
+        new Date(m.measurement_date) >= sevenDaysAgo
+      ).length || 0;
 
-      // IMC médio
-      const { data: avgIMCData } = await supabase
-        .from('weight_measurements')
-        .select('imc')
-        .not('imc', 'is', null);
-
-      const averageIMC = avgIMCData?.length 
-        ? avgIMCData.reduce((sum, item) => sum + (item.imc || 0), 0) / avgIMCData.length
-        : 0;
-
-      // Usuários ativos últimos 7 dias
-      const { count: activeUsers7Days } = await supabase
-        .from('weight_measurements')
-        .select('user_id', { count: 'exact', head: true })
-        .gte('measurement_date', weekAgo.toISOString());
-
-      // Usuários ativos últimos 30 dias
-      const { count: activeUsers30Days } = await supabase
-        .from('weight_measurements')
-        .select('user_id', { count: 'exact', head: true })
-        .gte('measurement_date', monthAgo.toISOString());
+      // Qualidade dos dados (% de medições com dados completos)
+      const completeMeasurements = measurements?.filter(m => 
+        m.peso_kg && m.gordura_corporal_percent
+      ).length || 0;
+      const dataQuality = totalMeasurements > 0 ? (completeMeasurements / totalMeasurements) * 100 : 0;
 
       setStats({
-        totalUsers: totalUsers || 0,
-        activeUsers7Days: activeUsers7Days || 0,
-        activeUsers30Days: activeUsers30Days || 0,
-        weighingsToday: weighingsToday || 0,
-        weighingsWeek: weighingsWeek || 0,
-        weighingsMonth: weighingsMonth || 0,
-        averageWeight: Math.round(averageWeight * 10) / 10,
-        averageIMC: Math.round(averageIMC * 10) / 10,
-        connectedDevices: 23, // Mock data
-        criticalAlerts: 3 // Mock data
+        totalUsers,
+        totalMeasurements,
+        activeUsers,
+        averageMeasurementsPerUser: Math.round(averageMeasurementsPerUser * 100) / 100,
+        recentActivity,
+        dataQuality: Math.round(dataQuality * 100) / 100
       });
+
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      console.error('Error fetching admin stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const statCards = [
-    {
-      title: "Total de Usuários",
-      value: stats.totalUsers,
-      change: "+12%",
-      trend: "up",
-      icon: Users,
-      color: "text-blue-500",
-      bgColor: "bg-blue-50 dark:bg-blue-950/20"
-    },
-    {
-      title: "Usuários Ativos (7 dias)",
-      value: stats.activeUsers7Days,
-      change: "+8%",
-      trend: "up",
-      icon: Activity,
-      color: "text-green-500",
-      bgColor: "bg-green-50 dark:bg-green-950/20"
-    },
-    {
-      title: "Pesagens Hoje",
-      value: stats.weighingsToday,
-      change: "+15%",
-      trend: "up",
-      icon: Scale,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50 dark:bg-purple-950/20"
-    },
-    {
-      title: "Pesagens Semana",
-      value: stats.weighingsWeek,
-      change: "+22%",
-      trend: "up",
-      icon: Calendar,
-      color: "text-orange-500",
-      bgColor: "bg-orange-50 dark:bg-orange-950/20"
-    },
-    {
-      title: "Peso Médio",
-      value: `${stats.averageWeight} kg`,
-      change: "-1.2kg",
-      trend: "down",
-      icon: Heart,
-      color: "text-red-500",
-      bgColor: "bg-red-50 dark:bg-red-950/20"
-    },
-    {
-      title: "IMC Médio",
-      value: stats.averageIMC,
-      change: "Normal",
-      trend: "stable",
-      icon: Target,
-      color: "text-cyan-500",
-      bgColor: "bg-cyan-50 dark:bg-cyan-950/20"
-    },
-    {
-      title: "Dispositivos Conectados",
-      value: stats.connectedDevices,
-      change: "+3",
-      trend: "up",
-      icon: Smartphone,
-      color: "text-indigo-500",
-      bgColor: "bg-indigo-50 dark:bg-indigo-950/20"
-    },
-    {
-      title: "Alertas Críticos",
-      value: stats.criticalAlerts,
-      change: "Atenção",
-      trend: "warning",
-      icon: AlertTriangle,
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-50 dark:bg-yellow-950/20"
+  const fetchIntegrationStats = async () => {
+    try {
+      // Buscar integrações
+      const { data: integrations, error: integrationsError } = await supabase
+        .from('health_integrations')
+        .select('id, enabled');
+
+      if (integrationsError) {
+        console.error('Error fetching integrations:', integrationsError);
+        return;
+      }
+
+      // Buscar logs de sincronização de hoje
+      const today = new Date().toISOString().split('T')[0];
+      const { data: syncLogs, error: syncError } = await supabase
+        .from('device_sync_log')
+        .select('sync_status, synced_at')
+        .gte('synced_at', today);
+
+      if (syncError) {
+        console.error('Error fetching sync logs:', syncError);
+        return;
+      }
+
+      const totalIntegrations = integrations?.length || 0;
+      const activeIntegrations = integrations?.filter(i => i.enabled).length || 0;
+      const syncedToday = syncLogs?.filter(log => log.sync_status === 'success').length || 0;
+      const errorCount = syncLogs?.filter(log => log.sync_status === 'error').length || 0;
+
+      setIntegrationStats({
+        totalIntegrations,
+        activeIntegrations,
+        syncedToday,
+        errorCount
+      });
+
+    } catch (error) {
+      console.error('Error fetching integration stats:', error);
     }
-  ];
+  };
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="space-y-0 pb-2">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-1/3"></div>
-              </CardContent>
-            </Card>
+        <div className="h-8 bg-muted animate-pulse rounded" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-24 bg-muted animate-pulse rounded" />
           ))}
         </div>
       </div>
@@ -225,94 +179,198 @@ export const AdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            Dashboard Admin
-          </h1>
-          <p className="text-muted-foreground">Visão geral completa do sistema</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Dashboard Administrativo</h2>
+        <p className="text-muted-foreground">
+          Visão geral da plataforma e estatísticas gerais
+        </p>
+      </div>
+
+      {/* Estatísticas de Usuários */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              Usuários cadastrados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              Últimos 30 dias
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Medições</CardTitle>
+            <Scale className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalMeasurements}</div>
+            <p className="text-xs text-muted-foreground">
+              Pesagens registradas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Atividade Recente</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.recentActivity}</div>
+            <p className="text-xs text-muted-foreground">
+              Últimos 7 dias
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Estatísticas de Integrações */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Wifi className="h-5 w-5" />
+          Integrações e Dispositivos
+        </h3>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Integrações</CardTitle>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{integrationStats.totalIntegrations}</div>
+              <p className="text-xs text-muted-foreground">
+                Disponíveis na plataforma
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Integrações Ativas</CardTitle>
+              <Smartphone className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{integrationStats.activeIntegrations}</div>
+              <p className="text-xs text-muted-foreground">
+                Configuradas e habilitadas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Sincronizações Hoje</CardTitle>
+              <Heart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{integrationStats.syncedToday}</div>
+              <p className="text-xs text-muted-foreground">
+                Sincronizações bem-sucedidas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Erros de Sincronização</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{integrationStats.errorCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Falhas nas últimas 24h
+              </p>
+            </CardContent>
+          </Card>
         </div>
-        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20">
-          Sistema Online
-        </Badge>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card 
-              key={stat.title} 
-              className="health-card hover:scale-105 transition-all duration-300"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">
-                  {stat.value}
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp 
-                    className={`h-3 w-3 ${
-                      stat.trend === 'up' ? 'text-green-500' : 
-                      stat.trend === 'down' ? 'text-red-500' : 
-                      stat.trend === 'warning' ? 'text-yellow-500' :
-                      'text-gray-500'
-                    }`} 
-                  />
-                  <span className={`text-xs ${
-                    stat.trend === 'up' ? 'text-green-600' : 
-                    stat.trend === 'down' ? 'text-red-600' : 
-                    stat.trend === 'warning' ? 'text-yellow-600' :
-                    'text-gray-600'
-                  }`}>
-                    {stat.change}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Tendência Geral */}
-      <Card className="health-card">
+      {/* Métricas de Qualidade */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Tendência Geral do Sistema
+            <BarChart3 className="h-5 w-5" />
+            Métricas de Qualidade
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600 mb-1">📈</div>
-              <div className="text-sm font-medium text-green-800 dark:text-green-200">Crescimento</div>
-              <div className="text-xs text-green-600">+22% de engajamento</div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Qualidade dos Dados</span>
+                <Badge variant={stats.dataQuality >= 80 ? "default" : "destructive"}>
+                  {stats.dataQuality}%
+                </Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Percentual de medições com dados completos
+              </div>
             </div>
-            <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600 mb-1">⚖️</div>
-              <div className="text-sm font-medium text-blue-800 dark:text-blue-200">Estável</div>
-              <div className="text-xs text-blue-600">Peso médio mantido</div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Média de Medições</span>
+                <Badge variant="secondary">
+                  {stats.averageMeasurementsPerUser}
+                </Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Por usuário na plataforma
+              </div>
             </div>
-            <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600 mb-1">🎯</div>
-              <div className="text-sm font-medium text-purple-800 dark:text-purple-200">Metas</div>
-              <div className="text-xs text-purple-600">78% de sucesso</div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Taxa de Atividade</span>
+                <Badge variant={stats.activeUsers > stats.totalUsers * 0.3 ? "default" : "destructive"}>
+                  {stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0}%
+                </Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Usuários ativos nos últimos 30 dias
+              </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ações Rápidas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ações Rápidas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={fetchAdminStats} variant="outline">
+              Atualizar Estatísticas
+            </Button>
+            <Button onClick={fetchIntegrationStats} variant="outline">
+              Verificar Integrações
+            </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 };
+
+export default AdminDashboard;

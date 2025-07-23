@@ -2,9 +2,18 @@
 export const config = {
   // Supabase Configuration
   supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL || "https://hlrkoyywjpckdotimtik.supabase.co",
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscmtveXl3anBja2RvdGltdGlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxNTMwNDcsImV4cCI6MjA2ODcyOTA0N30.kYEtg1hYG2pmcyIeXRs-vgNIVOD76Yu7KPlyFN0vdUI",
-    projectId: "hlrkoyywjpckdotimtik"
+    url: import.meta.env.VITE_SUPABASE_URL || "http://127.0.0.1:54321",
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
+    projectId: "local"
+  },
+  
+  // Asaas Configuration
+  asaas: {
+    apiKey: import.meta.env.VITE_ASAAS_API_KEY || "",
+    sandboxApiKey: import.meta.env.VITE_ASAAS_SANDBOX_API_KEY || "",
+    baseUrl: import.meta.env.VITE_ASAAS_BASE_URL || "https://sandbox.asaas.com/api/v3",
+    webhookUrl: import.meta.env.VITE_ASAAS_WEBHOOK_URL || "",
+    isSandbox: import.meta.env.VITE_ASAAS_SANDBOX === "true"
   },
   
   // GitHub Configuration
@@ -40,13 +49,15 @@ export const config = {
     enableAnalytics: import.meta.env.VITE_ENABLE_ANALYTICS === "true",
     enableDebugMode: import.meta.env.VITE_DEBUG_MODE === "true",
     enableNotifications: import.meta.env.VITE_ENABLE_NOTIFICATIONS !== "false",
-    enableGPTAssistant: import.meta.env.VITE_ENABLE_GPT_ASSISTANT === "true"
+    enableGPTAssistant: import.meta.env.VITE_ENABLE_GPT_ASSISTANT === "true",
+    enableAsaasPayments: import.meta.env.VITE_ENABLE_ASAAS_PAYMENTS === "true"
   }
 } as const;
 
 // Tipos para as configurações
 export type Config = typeof config;
 export type SupabaseConfig = Config['supabase'];
+export type AsaasConfig = Config['asaas'];
 export type GitHubConfig = Config['github'];
 export type AppConfig = Config['app'];
 

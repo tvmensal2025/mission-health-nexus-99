@@ -108,64 +108,107 @@ CREATE TRIGGER trigger_calculate_imc
   FOR EACH ROW
   EXECUTE FUNCTION calculate_imc();
 
--- 7. FUNÇÃO PARA GERAR ANÁLISE SEMANAL
+-- 7. FUNÇÃO PARA GERAR ANÁLISES SEMANAIS
 CREATE OR REPLACE FUNCTION generate_weekly_analysis()
 RETURNS TRIGGER AS $$
 DECLARE
-  semana_inicio DATE;
-  semana_fim DATE;
-  peso_inicial DECIMAL(5,2);
-  peso_final DECIMAL(5,2);
-  variacao_peso DECIMAL(5,2);
+  week_start DATE;
+  week_end DATE;
+  first_measurement RECORD;
+  last_measurement RECORD;
+  avg_measurement RECORD;
 BEGIN
-  -- Definir semana (segunda a domingo)
-  semana_inicio = DATE_TRUNC('week', NEW.measurement_date)::DATE;
-  semana_fim = semana_inicio + INTERVAL '6 days';
+  -- Calcular início e fim da semana
+  week_start = DATE_TRUNC('week', NEW.measurement_date::DATE);
+  week_end = week_start + INTERVAL '6 days';
   
-  -- Buscar primeira pesagem da semana
-  SELECT peso_kg INTO peso_inicial
+  -- Verificar se já existe análise para esta semana
+  IF EXISTS (
+    SELECT 1 FROM weekly_analyses 
+    WHERE user_id = NEW.user_id 
+    AND semana_inicio = week_start
+  ) THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Buscar primeira medição da semana
+  SELECT * INTO first_measurement
   FROM weight_measurements
-  WHERE user_id = NEW.user_id 
-    AND measurement_date >= semana_inicio 
-    AND measurement_date <= semana_fim
+  WHERE user_id = NEW.user_id
+  AND measurement_date::DATE >= week_start
+  AND measurement_date::DATE <= week_end
   ORDER BY measurement_date ASC
   LIMIT 1;
   
-  -- Última pesagem da semana
-  peso_final = NEW.peso_kg;
+  -- Buscar última medição da semana
+  SELECT * INTO last_measurement
+  FROM weight_measurements
+  WHERE user_id = NEW.user_id
+  AND measurement_date::DATE >= week_start
+  AND measurement_date::DATE <= week_end
+  ORDER BY measurement_date DESC
+  LIMIT 1;
   
-  -- Calcular variação
-  variacao_peso = peso_final - COALESCE(peso_inicial, peso_final);
+  -- Calcular médias da semana
+  SELECT 
+    AVG(peso_kg) as peso_medio,
+    AVG(gordura_corporal_percent) as gordura_media,
+    AVG(massa_muscular_kg) as massa_media,
+    AVG(imc) as imc_medio
+  INTO avg_measurement
+  FROM weight_measurements
+  WHERE user_id = NEW.user_id
+  AND measurement_date::DATE >= week_start
+  AND measurement_date::DATE <= week_end;
   
-  -- Inserir ou atualizar análise semanal
+  -- Inserir análise semanal
   INSERT INTO weekly_analyses (
-    user_id, semana_inicio, semana_fim, 
-    peso_inicial, peso_final, variacao_peso,
+    user_id,
+    semana_inicio,
+    semana_fim,
+    peso_inicial,
+    peso_final,
+    variacao_peso,
+    variacao_gordura_corporal,
+    variacao_massa_muscular,
+    media_imc,
     tendencia
   ) VALUES (
-    NEW.user_id, semana_inicio, semana_fim,
-    peso_inicial, peso_final, variacao_peso,
+    NEW.user_id,
+    week_start,
+    week_end,
+    first_measurement.peso_kg,
+    last_measurement.peso_kg,
+    last_measurement.peso_kg - first_measurement.peso_kg,
+    last_measurement.gordura_corporal_percent - first_measurement.gordura_corporal_percent,
+    last_measurement.massa_muscular_kg - first_measurement.massa_muscular_kg,
+    avg_measurement.imc_medio,
     CASE 
-      WHEN variacao_peso < -0.1 THEN 'diminuindo'
-      WHEN variacao_peso > 0.1 THEN 'aumentando'
+      WHEN last_measurement.peso_kg > first_measurement.peso_kg THEN 'aumento'
+      WHEN last_measurement.peso_kg < first_measurement.peso_kg THEN 'diminuicao'
       ELSE 'estavel'
     END
-  )
-  ON CONFLICT (user_id, semana_inicio) 
-  DO UPDATE SET
-    peso_final = EXCLUDED.peso_final,
-    variacao_peso = EXCLUDED.variacao_peso,
-    tendencia = EXCLUDED.tendencia;
+  );
   
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- 8. TRIGGER PARA GERAR ANÁLISE SEMANAL
+-- 8. TRIGGER PARA GERAR ANÁLISES SEMANAIS
 CREATE TRIGGER trigger_weekly_analysis
   AFTER INSERT ON weight_measurements
   FOR EACH ROW
   EXECUTE FUNCTION generate_weekly_analysis();
+
+-- 9. TRIGGER PARA UPDATED_AT
+-- 8. FUNÇÃO PARA UPDATED_AT
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- 9. TRIGGER PARA UPDATED_AT
 CREATE TRIGGER update_user_physical_data_updated_at
@@ -173,13 +216,13 @@ CREATE TRIGGER update_user_physical_data_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
--- 10. POLÍTICAS DE SEGURANÇA (RLS)
+-- 10. HABILITAR ROW LEVEL SECURITY (RLS)
 ALTER TABLE user_physical_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weight_measurements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_analyses ENABLE ROW LEVEL SECURITY;
 
--- Políticas para user_physical_data
+-- 11. POLÍTICAS DE SEGURANÇA PARA user_physical_data
 CREATE POLICY "Users can view own physical data" ON user_physical_data
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -189,17 +232,17 @@ CREATE POLICY "Users can insert own physical data" ON user_physical_data
 CREATE POLICY "Users can update own physical data" ON user_physical_data
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Políticas para weight_measurements
-CREATE POLICY "Users can view own measurements" ON weight_measurements
+-- 12. POLÍTICAS DE SEGURANÇA PARA weight_measurements
+CREATE POLICY "Users can view own weight measurements" ON weight_measurements
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own measurements" ON weight_measurements
+CREATE POLICY "Users can insert own weight measurements" ON weight_measurements
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own measurements" ON weight_measurements
+CREATE POLICY "Users can update own weight measurements" ON weight_measurements
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Políticas para user_goals
+-- 13. POLÍTICAS DE SEGURANÇA PARA user_goals
 CREATE POLICY "Users can view own goals" ON user_goals
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -209,14 +252,17 @@ CREATE POLICY "Users can insert own goals" ON user_goals
 CREATE POLICY "Users can update own goals" ON user_goals
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Políticas para weekly_analyses
+-- 14. POLÍTICAS DE SEGURANÇA PARA weekly_analyses
 CREATE POLICY "Users can view own weekly analyses" ON weekly_analyses
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own weekly analyses" ON weekly_analyses
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 11. ÍNDICES PARA PERFORMANCE
+CREATE POLICY "Users can update own weekly analyses" ON weekly_analyses
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- 15. ÍNDICES PARA PERFORMANCE
 CREATE INDEX idx_weight_measurements_user_date ON weight_measurements(user_id, measurement_date DESC);
 CREATE INDEX idx_weekly_analyses_user_week ON weekly_analyses(user_id, semana_inicio DESC);
 CREATE INDEX idx_user_goals_user_status ON user_goals(user_id, status);

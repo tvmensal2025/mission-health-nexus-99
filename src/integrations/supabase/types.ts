@@ -6,612 +6,249 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
-  }
+export interface Database {
   public: {
     Tables: {
-      assessments: {
-        Row: {
-          challenges_faced: string | null
-          created_at: string
-          goal_achievement_rating: number | null
-          id: string
-          improvements_noted: string | null
-          next_week_goals: string | null
-          satisfaction_rating: number | null
-          user_id: string
-          week_start_date: string
-          weight_change: number | null
-        }
-        Insert: {
-          challenges_faced?: string | null
-          created_at?: string
-          goal_achievement_rating?: number | null
-          id?: string
-          improvements_noted?: string | null
-          next_week_goals?: string | null
-          satisfaction_rating?: number | null
-          user_id: string
-          week_start_date: string
-          weight_change?: number | null
-        }
-        Update: {
-          challenges_faced?: string | null
-          created_at?: string
-          goal_achievement_rating?: number | null
-          id?: string
-          improvements_noted?: string | null
-          next_week_goals?: string | null
-          satisfaction_rating?: number | null
-          user_id?: string
-          week_start_date?: string
-          weight_change?: number | null
-        }
-        Relationships: []
-      }
-      course_modules: {
-        Row: {
-          course_id: string
-          created_at: string
-          description: string | null
-          id: string
-          order_index: number
-          title: string
-        }
-        Insert: {
-          course_id: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          order_index: number
-          title: string
-        }
-        Update: {
-          course_id?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          order_index?: number
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "course_modules_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      courses: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          difficulty_level: string | null
-          duration_minutes: number | null
-          id: string
-          instructor_name: string | null
-          is_premium: boolean | null
-          is_published: boolean | null
-          price: number | null
-          thumbnail_url: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          difficulty_level?: string | null
-          duration_minutes?: number | null
-          id?: string
-          instructor_name?: string | null
-          is_premium?: boolean | null
-          is_published?: boolean | null
-          price?: number | null
-          thumbnail_url?: string | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          difficulty_level?: string | null
-          duration_minutes?: number | null
-          id?: string
-          instructor_name?: string | null
-          is_premium?: boolean | null
-          is_published?: boolean | null
-          price?: number | null
-          thumbnail_url?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      health_diary: {
-        Row: {
-          created_at: string
-          date: string
-          energy_level: number | null
-          exercise_minutes: number | null
-          id: string
-          mood_rating: number | null
-          notes: string | null
-          sleep_hours: number | null
-          user_id: string
-          water_intake: number | null
-        }
-        Insert: {
-          created_at?: string
-          date?: string
-          energy_level?: number | null
-          exercise_minutes?: number | null
-          id?: string
-          mood_rating?: number | null
-          notes?: string | null
-          sleep_hours?: number | null
-          user_id: string
-          water_intake?: number | null
-        }
-        Update: {
-          created_at?: string
-          date?: string
-          energy_level?: number | null
-          exercise_minutes?: number | null
-          id?: string
-          mood_rating?: number | null
-          notes?: string | null
-          sleep_hours?: number | null
-          user_id?: string
-          water_intake?: number | null
-        }
-        Relationships: []
-      }
-      lessons: {
-        Row: {
-          created_at: string
-          description: string | null
-          duration_minutes: number | null
-          id: string
-          is_free: boolean | null
-          module_id: string
-          order_index: number
-          title: string
-          video_url: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          duration_minutes?: number | null
-          id?: string
-          is_free?: boolean | null
-          module_id: string
-          order_index: number
-          title: string
-          video_url?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          duration_minutes?: number | null
-          id?: string
-          is_free?: boolean | null
-          module_id?: string
-          order_index?: number
-          title?: string
-          video_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lessons_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "course_modules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      missions: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          difficulty: string | null
-          id: string
-          is_active: boolean | null
-          points: number | null
-          title: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          difficulty?: string | null
-          id?: string
-          is_active?: boolean | null
-          points?: number | null
-          title: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          difficulty?: string | null
-          id?: string
-          is_active?: boolean | null
-          points?: number | null
-          title?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          activity_level: string | null
-          age: number | null
-          avatar_url: string | null
-          created_at: string
-          current_weight: number | null
-          email: string | null
-          full_name: string | null
-          gender: string | null
-          height: number | null
-          id: string
-          target_weight: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          activity_level?: string | null
-          age?: number | null
-          avatar_url?: string | null
-          created_at?: string
-          current_weight?: number | null
-          email?: string | null
-          full_name?: string | null
-          gender?: string | null
-          height?: number | null
-          id?: string
-          target_weight?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          activity_level?: string | null
-          age?: number | null
-          avatar_url?: string | null
-          created_at?: string
-          current_weight?: number | null
-          email?: string | null
-          full_name?: string | null
-          gender?: string | null
-          height?: number | null
-          id?: string
-          target_weight?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_goals: {
-        Row: {
-          created_at: string | null
-          data_fim: string | null
-          data_inicio: string | null
-          gordura_corporal_meta_percent: number | null
-          id: string
-          imc_meta: number | null
-          peso_meta_kg: number | null
-          status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          data_fim?: string | null
-          data_inicio?: string | null
-          gordura_corporal_meta_percent?: number | null
-          id?: string
-          imc_meta?: number | null
-          peso_meta_kg?: number | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          data_fim?: string | null
-          data_inicio?: string | null
-          gordura_corporal_meta_percent?: number | null
-          id?: string
-          imc_meta?: number | null
-          peso_meta_kg?: number | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      user_missions: {
-        Row: {
-          completed_at: string | null
-          date_assigned: string
-          id: string
-          is_completed: boolean | null
-          mission_id: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          date_assigned?: string
-          id?: string
-          is_completed?: boolean | null
-          mission_id: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          date_assigned?: string
-          id?: string
-          is_completed?: boolean | null
-          mission_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_missions_mission_id_fkey"
-            columns: ["mission_id"]
-            isOneToOne: false
-            referencedRelation: "missions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_physical_data: {
-        Row: {
-          altura_cm: number
-          created_at: string | null
-          id: string
-          idade: number
-          nivel_atividade: string | null
-          sexo: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          altura_cm: number
-          created_at?: string | null
-          id?: string
-          idade: number
-          nivel_atividade?: string | null
-          sexo: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          altura_cm?: number
-          created_at?: string | null
-          id?: string
-          idade?: number
-          nivel_atividade?: string | null
-          sexo?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      user_progress: {
-        Row: {
-          completed_at: string | null
-          id: string
-          is_completed: boolean | null
-          lesson_id: string
-          user_id: string
-          watch_time_seconds: number | null
-        }
-        Insert: {
-          completed_at?: string | null
-          id?: string
-          is_completed?: boolean | null
-          lesson_id: string
-          user_id: string
-          watch_time_seconds?: number | null
-        }
-        Update: {
-          completed_at?: string | null
-          id?: string
-          is_completed?: boolean | null
-          lesson_id?: string
-          user_id?: string
-          watch_time_seconds?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_progress_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      weekly_analyses: {
-        Row: {
-          created_at: string | null
-          id: string
-          media_imc: number | null
-          observacoes: string | null
-          peso_final: number | null
-          peso_inicial: number | null
-          semana_fim: string
-          semana_inicio: string
-          tendencia: string | null
-          user_id: string | null
-          variacao_gordura_corporal: number | null
-          variacao_massa_muscular: number | null
-          variacao_peso: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          media_imc?: number | null
-          observacoes?: string | null
-          peso_final?: number | null
-          peso_inicial?: number | null
-          semana_fim: string
-          semana_inicio: string
-          tendencia?: string | null
-          user_id?: string | null
-          variacao_gordura_corporal?: number | null
-          variacao_massa_muscular?: number | null
-          variacao_peso?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          media_imc?: number | null
-          observacoes?: string | null
-          peso_final?: number | null
-          peso_inicial?: number | null
-          semana_fim?: string
-          semana_inicio?: string
-          tendencia?: string | null
-          user_id?: string | null
-          variacao_gordura_corporal?: number | null
-          variacao_massa_muscular?: number | null
-          variacao_peso?: number | null
-        }
-        Relationships: []
-      }
-      weighings: {
-        Row: {
-          basal_metabolism: number | null
-          bmi: number | null
-          body_fat: number | null
-          body_water: number | null
-          bone_mass: number | null
-          created_at: string
-          device_type: string | null
-          id: string
-          metabolic_age: number | null
-          muscle_mass: number | null
-          user_id: string
-          weight: number
-        }
-        Insert: {
-          basal_metabolism?: number | null
-          bmi?: number | null
-          body_fat?: number | null
-          body_water?: number | null
-          bone_mass?: number | null
-          created_at?: string
-          device_type?: string | null
-          id?: string
-          metabolic_age?: number | null
-          muscle_mass?: number | null
-          user_id: string
-          weight: number
-        }
-        Update: {
-          basal_metabolism?: number | null
-          bmi?: number | null
-          body_fat?: number | null
-          body_water?: number | null
-          bone_mass?: number | null
-          created_at?: string
-          device_type?: string | null
-          id?: string
-          metabolic_age?: number | null
-          muscle_mass?: number | null
-          user_id?: string
-          weight?: number
-        }
-        Relationships: []
-      }
       weight_measurements: {
         Row: {
-          agua_corporal_percent: number | null
-          circunferencia_abdominal_cm: number | null
-          circunferencia_braco_cm: number | null
-          circunferencia_perna_cm: number | null
-          created_at: string | null
-          device_type: string | null
-          gordura_corporal_percent: number | null
-          gordura_visceral: number | null
-          id: string
-          idade_metabolica: number | null
-          imc: number | null
-          massa_muscular_kg: number | null
-          measurement_date: string | null
-          metabolismo_basal_kcal: number | null
-          notes: string | null
-          osso_kg: number | null
-          peso_kg: number
-          risco_metabolico: string | null
-          user_id: string | null
-        }
+          id: string;
+          user_id: string | null;
+          peso_kg: number;
+          gordura_corporal_percent: number | null;
+          massa_muscular_kg: number | null;
+          agua_corporal_percent: number | null;
+          osso_kg: number | null;
+          metabolismo_basal_kcal: number | null;
+          idade_metabolica: number | null;
+          imc: number | null;
+          measurement_date: string | null;
+          created_at: string | null;
+          device_type: string | null;
+          notes: string | null;
+          gordura_visceral: number | null;
+          risco_metabolico: string | null;
+          circunferencia_abdominal_cm: number | null;
+          circunferencia_braco_cm: number | null;
+          circunferencia_perna_cm: number | null;
+        };
         Insert: {
-          agua_corporal_percent?: number | null
-          circunferencia_abdominal_cm?: number | null
-          circunferencia_braco_cm?: number | null
-          circunferencia_perna_cm?: number | null
-          created_at?: string | null
-          device_type?: string | null
-          gordura_corporal_percent?: number | null
-          gordura_visceral?: number | null
-          id?: string
-          idade_metabolica?: number | null
-          imc?: number | null
-          massa_muscular_kg?: number | null
-          measurement_date?: string | null
-          metabolismo_basal_kcal?: number | null
-          notes?: string | null
-          osso_kg?: number | null
-          peso_kg: number
-          risco_metabolico?: string | null
-          user_id?: string | null
-        }
+          id?: string;
+          user_id?: string | null;
+          peso_kg: number;
+          gordura_corporal_percent?: number | null;
+          massa_muscular_kg?: number | null;
+          agua_corporal_percent?: number | null;
+          osso_kg?: number | null;
+          metabolismo_basal_kcal?: number | null;
+          idade_metabolica?: number | null;
+          imc?: number | null;
+          measurement_date?: string | null;
+          created_at?: string | null;
+          device_type?: string | null;
+          notes?: string | null;
+          gordura_visceral?: number | null;
+          risco_metabolico?: string | null;
+          circunferencia_abdominal_cm?: number | null;
+          circunferencia_braco_cm?: number | null;
+          circunferencia_perna_cm?: number | null;
+        };
         Update: {
-          agua_corporal_percent?: number | null
-          circunferencia_abdominal_cm?: number | null
-          circunferencia_braco_cm?: number | null
-          circunferencia_perna_cm?: number | null
-          created_at?: string | null
-          device_type?: string | null
-          gordura_corporal_percent?: number | null
-          gordura_visceral?: number | null
-          id?: string
-          idade_metabolica?: number | null
-          imc?: number | null
-          massa_muscular_kg?: number | null
-          measurement_date?: string | null
-          metabolismo_basal_kcal?: number | null
-          notes?: string | null
-          osso_kg?: number | null
-          peso_kg?: number
-          risco_metabolico?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-    }
+          id?: string;
+          user_id?: string | null;
+          peso_kg?: number;
+          gordura_corporal_percent?: number | null;
+          massa_muscular_kg?: number | null;
+          agua_corporal_percent?: number | null;
+          osso_kg?: number | null;
+          metabolismo_basal_kcal?: number | null;
+          idade_metabolica?: number | null;
+          imc?: number | null;
+          measurement_date?: string | null;
+          created_at?: string | null;
+          device_type?: string | null;
+          notes?: string | null;
+          gordura_visceral?: number | null;
+          risco_metabolico?: string | null;
+          circunferencia_abdominal_cm?: number | null;
+          circunferencia_braco_cm?: number | null;
+          circunferencia_perna_cm?: number | null;
+        };
+      };
+      user_goals: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          peso_meta_kg: number | null;
+          gordura_corporal_meta_percent: number | null;
+          imc_meta: number | null;
+          data_inicio: string | null;
+          data_fim: string | null;
+          status: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          peso_meta_kg?: number | null;
+          gordura_corporal_meta_percent?: number | null;
+          imc_meta?: number | null;
+          data_inicio?: string | null;
+          data_fim?: string | null;
+          status?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          peso_meta_kg?: number | null;
+          gordura_corporal_meta_percent?: number | null;
+          imc_meta?: number | null;
+          data_inicio?: string | null;
+          data_fim?: string | null;
+          status?: string | null;
+          created_at?: string | null;
+        };
+      };
+      user_physical_data: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          altura_cm: number;
+          idade: number;
+          sexo: string;
+          nivel_atividade: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          altura_cm: number;
+          idade: number;
+          sexo: string;
+          nivel_atividade?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          altura_cm?: number;
+          idade?: number;
+          sexo?: string;
+          nivel_atividade?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      sessions: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          type: string;
+          content: any;
+          target_saboteurs: string[] | null;
+          difficulty: string;
+          estimated_time: number | null;
+          materials_needed: string[] | null;
+          follow_up_questions: string[] | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+          is_active: boolean;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          type?: string;
+          content: any;
+          target_saboteurs?: string[] | null;
+          difficulty?: string;
+          estimated_time?: number | null;
+          materials_needed?: string[] | null;
+          follow_up_questions?: string[] | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string | null;
+          type?: string;
+          content?: any;
+          target_saboteurs?: string[] | null;
+          difficulty?: string;
+          estimated_time?: number | null;
+          materials_needed?: string[] | null;
+          follow_up_questions?: string[] | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+          is_active?: boolean;
+        };
+      };
+      user_sessions: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          status: string;
+          assigned_at: string;
+          started_at: string | null;
+          completed_at: string | null;
+          due_date: string | null;
+          progress: number;
+          feedback: any | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          status?: string;
+          assigned_at?: string;
+          started_at?: string | null;
+          completed_at?: string | null;
+          due_date?: string | null;
+          progress?: number;
+          feedback?: any | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          user_id?: string;
+          status?: string;
+          assigned_at?: string;
+          started_at?: string | null;
+          completed_at?: string | null;
+          due_date?: string | null;
+          progress?: number;
+          feedback?: any | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+      [_ in never]: never;
+    };
+  };
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
@@ -714,25 +351,74 @@ export type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+
 
 export const Constants = {
   public: {
     Enums: {},
   },
 } as const
+
+// Tipos para o sistema de sessões
+export interface Session {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'saboteur_work' | 'coaching' | 'assessment' | 'reflection';
+  content: SessionContent;
+  target_saboteurs?: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimated_time?: number;
+  materials_needed?: string[];
+  follow_up_questions?: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+}
+
+export interface SessionContent {
+  sections: SessionSection[];
+}
+
+export interface SessionSection {
+  title: string;
+  activities: string[];
+  description?: string;
+}
+
+export interface UserSession {
+  id: string;
+  session_id: string;
+  user_id: string;
+  status: 'assigned' | 'in_progress' | 'completed' | 'skipped';
+  assigned_at: string;
+  started_at?: string;
+  completed_at?: string;
+  due_date?: string;
+  progress: number;
+  feedback?: any;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  session?: Session; // Relacionamento com a sessão
+}
+
+export interface SessionFormData {
+  title: string;
+  description: string;
+  type: 'saboteur_work' | 'coaching' | 'assessment' | 'reflection';
+  content: SessionContent;
+  target_saboteurs: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimated_time: number;
+  materials_needed: string[];
+  follow_up_questions: string[];
+}
+
+export interface SendSessionData {
+  sessionId: string;
+  userIds: string[];
+  dueDate?: string;
+  customMessage?: string;
+}

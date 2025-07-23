@@ -127,7 +127,3 @@ template = "Your code is {{ .Code }}"
 
 [edge_runtime]
 enabled = true
-# Port to use for the Edge Runtime.
-port = 54325
-# The maximum size of the request body, in bytes.
-max_request_size = 1048576

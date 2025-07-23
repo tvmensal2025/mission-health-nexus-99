@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,13 +48,7 @@ const DailyMissions = ({ user }: DailyMissionsProps) => {
   const [totalPoints, setTotalPoints] = useState(0);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchTodaysMissions();
-    }
-  }, [user]);
-
-  const fetchTodaysMissions = async () => {
+  const fetchTodaysMissions = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
@@ -94,7 +88,7 @@ const DailyMissions = ({ user }: DailyMissionsProps) => {
         mission_id: um.mission_id,
         is_completed: um.is_completed,
         completed_at: um.completed_at,
-        mission: um.missions as Mission
+        mission: um.missions as unknown as Mission
       }));
 
       setMissions(processedMissions);
@@ -112,7 +106,13 @@ const DailyMissions = ({ user }: DailyMissionsProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTodaysMissions();
+    }
+  }, [user, fetchTodaysMissions]);
 
   const assignTodaysMissions = async () => {
     try {

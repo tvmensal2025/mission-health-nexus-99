@@ -1,16 +1,15 @@
 import React from 'react';
 import { 
   LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip
 } from 'recharts';
 import { 
   Heart, Activity, Droplets, Target, TrendingUp, Scale, 
   Zap, Calendar, Award, Timer
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Progress } from './ui/progress';
+import { Button } from './ui/button';
 
 // Mock data
 const weightData = [
@@ -155,7 +154,8 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weightData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -168,7 +168,7 @@ export default function Dashboard() {
                   fontSize={12}
                   domain={['dataMin - 1', 'dataMax + 1']}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                  <Tooltip />
                 <Line 
                   type="monotone" 
                   dataKey="peso" 
@@ -186,7 +186,8 @@ export default function Dashboard() {
                   dot={false}
                 />
               </LineChart>
-            </ChartContainer>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -202,7 +203,8 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={bodyComposition}
@@ -216,9 +218,10 @@ export default function Dashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
+                  <Tooltip />
               </PieChart>
-            </ChartContainer>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -235,7 +238,8 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={chartConfig} className="h-80">
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyStats}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -247,7 +251,7 @@ export default function Dashboard() {
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
               />
-              <ChartTooltip content={<ChartTooltipContent />} />
+                <Tooltip />
               <Legend />
               <Bar 
                 dataKey="exercicio" 
@@ -265,7 +269,8 @@ export default function Dashboard() {
                 radius={[2, 2, 0, 0]}
               />
             </BarChart>
-          </ChartContainer>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
 

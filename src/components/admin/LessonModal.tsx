@@ -46,6 +46,7 @@ interface LessonFormData {
   moduleId: string;
   
   // Conteúdo
+  videoType: 'youtube' | 'vimeo' | 'panda' | 'upload';
   videoUrl: string;
   richTextContent: string;
   mixedContent: string;
@@ -54,6 +55,7 @@ interface LessonFormData {
   thumbnail?: File;
   document?: File;
   image?: File;
+  video?: File;
   
   // Avançado
   objectives: string;
@@ -74,6 +76,7 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
     isActive: true,
     courseId: "",
     moduleId: "",
+    videoType: 'youtube',
     videoUrl: "",
     richTextContent: "",
     mixedContent: "",
@@ -87,7 +90,7 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState("");
 
-  const handleInputChange = (field: keyof LessonFormData, value: any) => {
+  const handleInputChange = (field: keyof LessonFormData, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -102,7 +105,7 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
     }
   };
 
-  const handleFileUpload = (field: 'thumbnail' | 'document' | 'image', event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (field: 'thumbnail' | 'document' | 'image' | 'video', event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFormData(prev => ({
@@ -179,6 +182,7 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
         isActive: true,
         courseId: "",
         moduleId: "",
+        videoType: 'youtube',
         videoUrl: "",
         richTextContent: "",
         mixedContent: "",
@@ -209,6 +213,7 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
         isActive: true,
         courseId: "",
         moduleId: "",
+        videoType: 'youtube',
         videoUrl: "",
         richTextContent: "",
         mixedContent: "",
@@ -445,18 +450,94 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
           {/* ABA CONTEÚDO */}
           <TabsContent value="content" className="space-y-6">
             <div className="space-y-4">
+              {/* Tipo de Vídeo */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-300">
+                  🎥 TIPO DE VÍDEO
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="youtube"
+                      name="videoType"
+                      value="youtube"
+                      checked={formData.videoType === "youtube"}
+                      onChange={(e) => handleInputChange("videoType", e.target.value)}
+                      className="text-purple-500"
+                    />
+                    <Label htmlFor="youtube" className="text-sm text-gray-300">
+                      YouTube URL
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="vimeo"
+                      name="videoType"
+                      value="vimeo"
+                      checked={formData.videoType === "vimeo"}
+                      onChange={(e) => handleInputChange("videoType", e.target.value)}
+                      className="text-purple-500"
+                    />
+                    <Label htmlFor="vimeo" className="text-sm text-gray-300">
+                      Vimeo URL
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="panda"
+                      name="videoType"
+                      value="panda"
+                      checked={formData.videoType === "panda"}
+                      onChange={(e) => handleInputChange("videoType", e.target.value)}
+                      className="text-purple-500"
+                    />
+                    <Label htmlFor="panda" className="text-sm text-gray-300">
+                      Panda URL
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="upload"
+                      name="videoType"
+                      value="upload"
+                      checked={formData.videoType === "upload"}
+                      onChange={(e) => handleInputChange("videoType", e.target.value)}
+                      className="text-purple-500"
+                    />
+                    <Label htmlFor="upload" className="text-sm text-gray-300">
+                      Upload Local
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
               {/* URL do Vídeo */}
               <div className="space-y-2">
                 <Label htmlFor="videoUrl" className="text-sm font-medium text-gray-300">
-                  🎥 URL do Vídeo
+                  🎬 URL do Vídeo
                 </Label>
                 <Input
                   id="videoUrl"
                   value={formData.videoUrl}
                   onChange={(e) => handleInputChange("videoUrl", e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
+                  placeholder={
+                    formData.videoType === "youtube" ? "https://youtube.com/watch?v=..." :
+                    formData.videoType === "vimeo" ? "https://vimeo.com/123456789" :
+                    formData.videoType === "panda" ? "https://panda.com/video/abc123" :
+                    "Selecione o tipo de vídeo primeiro"
+                  }
                   className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                 />
+                <div className="text-xs text-gray-400">
+                  {formData.videoType === "youtube" && "Exemplo: https://youtube.com/watch?v=abc123"}
+                  {formData.videoType === "vimeo" && "Exemplo: https://vimeo.com/123456789"}
+                  {formData.videoType === "panda" && "Exemplo: https://panda.com/video/abc123"}
+                  {formData.videoType === "upload" && "Clique em 'Upload Local' na aba MÍDIA"}
+                </div>
               </div>
 
               {/* Editor de Texto Rico */}
@@ -583,6 +664,37 @@ export const LessonModal = ({ isOpen, onClose, onSubmit, courses, modules }: Les
                   <div className="flex items-center gap-2 text-green-400 text-sm">
                     <CheckCircle className="h-4 w-4" />
                     Imagem: {formData.image.name}
+                  </div>
+                )}
+              </div>
+              
+              {/* Vídeo */}
+              <div className="space-y-2">
+                <Label htmlFor="video" className="text-sm font-medium text-gray-300">
+                  🎬 Arquivo de Vídeo
+                </Label>
+                <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-colors">
+                  <input
+                    id="video"
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => handleFileUpload('video', e)}
+                    className="hidden"
+                  />
+                  <label htmlFor="video" className="cursor-pointer">
+                    <Video className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-300 mb-1">
+                      {formData.video ? formData.video.name : "📁 Upload Vídeo"}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      MP4, MOV, AVI até 500MB
+                    </p>
+                  </label>
+                </div>
+                {formData.video && (
+                  <div className="flex items-center gap-2 text-green-400 text-sm">
+                    <CheckCircle className="h-4 w-4" />
+                    Vídeo: {formData.video.name}
                   </div>
                 )}
               </div>

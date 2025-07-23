@@ -30,12 +30,26 @@ const WeightMeasurementForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevenir salvamento duplo
+    if (loading) {
+      console.log('Formulário já está sendo enviado...');
+      return;
+    }
+    
+    // Validar peso obrigatório
+    if (!formData.peso_kg || parseFloat(formData.peso_kg) <= 0) {
+      alert('Peso é obrigatório e deve ser maior que zero!');
+      return;
+    }
+    
     if (!physicalData) {
       alert('Você precisa cadastrar seus dados físicos primeiro!');
       return;
     }
     
     try {
+      console.log('Iniciando salvamento de medição...');
+      
       const measurementData = {
         peso_kg: parseFloat(formData.peso_kg),
         gordura_corporal_percent: formData.gordura_corporal_percent ? parseFloat(formData.gordura_corporal_percent) : undefined,
@@ -52,7 +66,10 @@ const WeightMeasurementForm: React.FC = () => {
         notes: formData.notes || undefined
       };
 
+      console.log('Dados da medição preparados:', measurementData);
       await saveMeasurement(measurementData);
+      
+      console.log('Medição salva com sucesso, limpando formulário...');
       
       // Limpar formulário
       setFormData({
@@ -71,7 +88,8 @@ const WeightMeasurementForm: React.FC = () => {
         notes: ''
       });
     } catch (err) {
-      console.error('Error saving measurement:', err);
+      console.error('Erro ao salvar medição:', err);
+      alert(`Erro ao salvar medição: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
     }
   };
 

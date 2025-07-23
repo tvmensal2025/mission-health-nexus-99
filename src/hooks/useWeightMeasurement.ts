@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,6 +25,7 @@ export interface WeightMeasurement {
 
 export interface UserPhysicalData {
   id: string;
+  user_id: string;
   altura_cm: number;
   idade: number;
   sexo: string;
@@ -35,16 +36,14 @@ export interface UserPhysicalData {
 
 export interface WeeklyAnalysis {
   id: string;
+  user_id: string;
   semana_inicio: string;
   semana_fim: string;
   peso_inicial?: number;
   peso_final?: number;
   variacao_peso?: number;
-  variacao_gordura_corporal?: number;
-  variacao_massa_muscular?: number;
-  media_imc?: number;
   tendencia?: string;
-  observacoes?: string;
+  created_at: string;
 }
 
 export const useWeightMeasurement = () => {
@@ -53,34 +52,53 @@ export const useWeightMeasurement = () => {
   const [weeklyAnalyses, setWeeklyAnalyses] = useState<WeeklyAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dataFreshness, setDataFreshness] = useState<Date>(new Date());
   const { toast } = useToast();
 
-  // Buscar dados físicos do usuário
-  const fetchPhysicalData = async () => {
+  // Buscar dados físicos do usuário com cache
+  const fetchPhysicalData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('Usuário não autenticado');
+        return;
+      }
 
+      console.log('Buscando dados físicos para usuário:', user.id);
+      
       const { data, error } = await supabase
         .from('user_physical_data')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('Usuário não possui dados físicos cadastrados');
+          setPhysicalData(null);
+          return;
+        }
+        throw error;
+      }
+      
+      console.log('Dados físicos encontrados:', data);
       setPhysicalData(data);
-    } catch (err) {
-      console.error('Error fetching physical data:', err);
+    } catch (err: any) {
+      console.error('Erro ao buscar dados físicos:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
   // Salvar dados físicos do usuário
   const savePhysicalData = async (data: Omit<UserPhysicalData, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       setLoading(true);
+      setError(null);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
+
+      console.log('Salvando dados físicos:', { user_id: user.id, ...data });
 
       const { data: result, error } = await supabase
         .from('user_physical_data')
@@ -91,15 +109,20 @@ export const useWeightMeasurement = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao salvar dados físicos:', error);
+        throw error;
+      }
       
+      console.log('Dados físicos salvos com sucesso:', result);
       setPhysicalData(result);
       toast({
         title: "Dados salvos!",
         description: "Seus dados físicos foram salvos com sucesso.",
       });
       return result;
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Erro ao salvar dados físicos:', err);
       setError(err.message);
       toast({
         title: "Erro",
@@ -112,35 +135,71 @@ export const useWeightMeasurement = () => {
     }
   };
 
-  // Salvar nova pesagem
+  // Salvar medição de peso
   const saveMeasurement = async (measurement: Omit<WeightMeasurement, 'id' | 'measurement_date' | 'created_at'>) => {
     try {
+      // Prevenir salvamento duplo
+      if (loading) {
+        console.log('Salvamento já em andamento, ignorando...');
+        throw new Error('Salvamento já em andamento');
+      }
+      
       setLoading(true);
+      setError(null);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      console.log('Iniciando salvamento de medição:', { user_id: user.id, ...measurement });
+
       // Verificar se dados físicos existem
       if (!physicalData) {
-        throw new Error('Você precisa cadastrar seus dados físicos primeiro (altura, idade, sexo)');
+        console.log('Dados físicos não encontrados, buscando...');
+        await fetchPhysicalData();
+        
+        if (!physicalData) {
+          throw new Error('Você precisa cadastrar seus dados físicos primeiro (altura, idade, sexo)');
+        }
       }
+
+      // Validar dados obrigatórios
+      if (!measurement.peso_kg || measurement.peso_kg <= 0) {
+        throw new Error('Peso é obrigatório e deve ser maior que zero');
+      }
+
+      const measurementData = {
+        user_id: user.id,
+        ...measurement,
+        measurement_date: new Date().toISOString()
+      };
+
+      console.log('Dados da medição para salvar:', measurementData);
 
       const { data, error } = await supabase
         .from('weight_measurements')
-        .insert({
-          user_id: user.id,
-          ...measurement,
-          measurement_date: new Date().toISOString()
-        })
+        .insert(measurementData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao salvar medição:', error);
+        throw error;
+      }
       
-      // Atualizar lista de pesagens
-      setMeasurements(prev => [data, ...prev]);
+      console.log('Medição salva com sucesso:', data);
       
-      // Buscar análises semanais atualizadas
-      await fetchWeeklyAnalysis();
+      // ATUALIZAÇÃO OTIMIZADA: Adicionar nova medição sem re-fetch completo
+      setMeasurements(prev => {
+        const newMeasurements = [data, ...prev];
+        // Manter apenas as últimas 30 medições para performance
+        return newMeasurements.slice(0, 30);
+      });
+      
+      // Marcar dados como atualizados
+      setDataFreshness(new Date());
+      
+      // Buscar análises semanais de forma não-bloqueante
+      fetchWeeklyAnalysis().catch(console.error);
       
       const riskMessages = {
         'baixo_peso': 'Seu IMC indica baixo peso. Considere consultar um profissional.',
@@ -153,11 +212,12 @@ export const useWeightMeasurement = () => {
 
       toast({
         title: "Pesagem salva!",
-        description: `Peso: ${data.peso_kg}kg | IMC: ${data.imc?.toFixed(1)} | ${riskMessages[data.risco_metabolico] || 'Pesagem registrada com sucesso'}`,
+        description: `Peso: ${data.peso_kg}kg | IMC: ${data.imc?.toFixed(1)} | ${riskMessages[data.risco_metabolico as keyof typeof riskMessages] || 'Pesagem registrada com sucesso'}`,
       });
 
       return data;
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Erro ao salvar medição:', err);
       setError(err.message);
       toast({
         title: "Erro",
@@ -170,12 +230,29 @@ export const useWeightMeasurement = () => {
     }
   };
 
-  // Buscar histórico de pesagens
-  const fetchMeasurements = async (limit = 30) => {
+  // Buscar histórico de pesagens com cache inteligente
+  const fetchMeasurements = useCallback(async (limit = 30, forceRefresh = false) => {
     try {
+      // Se dados são recentes e não é refresh forçado, não buscar novamente
+      if (!forceRefresh && measurements.length > 0) {
+        const lastFetch = dataFreshness.getTime();
+        const now = new Date().getTime();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (now - lastFetch < fiveMinutes) {
+          console.log('Dados ainda são frescos, não buscando novamente');
+          return; // Dados ainda são frescos
+        }
+      }
+
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('Usuário não autenticado para buscar medições');
+        return;
+      }
+
+      console.log('Buscando medições para usuário:', user.id);
 
       const { data, error } = await supabase
         .from('weight_measurements')
@@ -184,24 +261,31 @@ export const useWeightMeasurement = () => {
         .order('measurement_date', { ascending: false })
         .limit(limit);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar medições:', error);
+        throw error;
+      }
+      
+      console.log('Medições encontradas:', data?.length || 0);
       setMeasurements(data || []);
-    } catch (err) {
+      setDataFreshness(new Date());
+    } catch (err: any) {
+      console.error('Erro ao buscar medições:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [measurements.length, dataFreshness]);
 
   // Buscar análise semanal
-  const fetchWeeklyAnalysis = async () => {
+  const fetchWeeklyAnalysis = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
         .from('weekly_analyses')
-        .select('*')
+        .select('id, user_id, semana_inicio, semana_fim, peso_inicial, peso_final, variacao_peso, tendencia, created_at')
         .eq('user_id', user.id)
         .order('semana_inicio', { ascending: false })
         .limit(8);
@@ -209,14 +293,14 @@ export const useWeightMeasurement = () => {
       if (error) throw error;
       setWeeklyAnalyses(data || []);
       return data;
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       return [];
     }
-  };
+  }, []);
 
-  // Calcular estatísticas
-  const getStats = () => {
+  // Calcular estatísticas com memoização
+  const stats = useMemo(() => {
     if (measurements.length === 0) return null;
 
     const latest = measurements[0];
@@ -234,15 +318,17 @@ export const useWeightMeasurement = () => {
             : 'stable'
         : 'stable',
       riskLevel: latest.risco_metabolico,
-      totalMeasurements: measurements.length
+      totalMeasurements: measurements.length,
+      averageWeight: measurements.reduce((sum, m) => sum + m.peso_kg, 0) / measurements.length
     };
-  };
+  }, [measurements]);
 
+  // Carregar dados iniciais
   useEffect(() => {
     fetchPhysicalData();
     fetchMeasurements();
     fetchWeeklyAnalysis();
-  }, []);
+  }, [fetchPhysicalData, fetchMeasurements, fetchWeeklyAnalysis]);
 
   return {
     measurements,
@@ -250,11 +336,11 @@ export const useWeightMeasurement = () => {
     weeklyAnalyses,
     loading,
     error,
-    stats: getStats(),
+    stats,
     saveMeasurement,
     savePhysicalData,
     fetchMeasurements,
-    fetchWeeklyAnalysis,
-    fetchPhysicalData
+    fetchPhysicalData,
+    fetchWeeklyAnalysis
   };
 };

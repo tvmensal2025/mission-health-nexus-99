@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, ArrowLeft } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Heart, ArrowLeft, User, Phone, Calendar, MapPin, Ruler } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,19 +24,20 @@ const AuthPage = () => {
     password: "",
   });
 
-  // Signup form state
+  // Signup form state - EXPANDIDO com novos campos
   const [signupData, setSignupData] = useState({
     fullName: "",
     email: "",
+    phone: "",
+    birthDate: "",
+    gender: "",
+    city: "",
+    height: "",
     password: "",
     confirmPassword: "",
   });
 
-  // Admin access state
-  const [adminData, setAdminData] = useState({
-    email: "",
-    password: "",
-  });
+
 
   const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
@@ -49,17 +51,68 @@ const AuthPage = () => {
 
     setIsLoading(true);
     try {
+      // Verificar se são credenciais de administrador
+      const isAdmin = loginData.email === "admin@institutodossonhos.com.br" && loginData.password === "admin123";
+      
       const { error } = await supabase.auth.signInWithPassword({
         email: loginData.email,
         password: loginData.password,
       });
 
       if (error) {
+        // Se é admin e não existe, criar automaticamente
+        if (isAdmin) {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: loginData.email,
+            password: loginData.password,
+            options: {
+              data: {
+                full_name: "Administrador",
+                role: "admin",
+              },
+            },
+          });
+
+          if (signUpError) {
+            toast({
+              title: "Erro no acesso",
+              description: "Não foi possível criar a conta de administrador",
+              variant: "destructive",
+            });
+            return;
+          }
+
+                  // Criar perfil na tabela user_profiles (tabela correta)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              full_name: "Administrador",
+            });
+
+          if (profileError) {
+            console.error('Erro ao criar perfil de admin:', profileError);
+          }
+        }
+        } else {
+          toast({
+            title: "Erro no login",
+            description: "Email ou senha incorretos",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Redirecionar baseado no tipo de usuário
+      if (isAdmin) {
         toast({
-          title: "Erro no login",
-          description: "Email ou senha incorretos",
-          variant: "destructive",
+          title: "Acesso administrativo concedido",
+          description: "Bem-vindo, administrador",
         });
+        navigate("/admin");
       } else {
         toast({
           title: "Login realizado!",
@@ -79,10 +132,13 @@ const AuthPage = () => {
   };
 
   const handleSignup = async () => {
-    if (!signupData.fullName || !signupData.email || !signupData.password || !signupData.confirmPassword) {
+    // Validação de campos obrigatórios
+    if (!signupData.fullName || !signupData.email || !signupData.phone || 
+        !signupData.birthDate || !signupData.gender || !signupData.city || 
+        !signupData.height || !signupData.password || !signupData.confirmPassword) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos",
+        description: "Por favor, preencha todos os campos obrigatórios",
         variant: "destructive",
       });
       return;
@@ -106,15 +162,44 @@ const AuthPage = () => {
       return;
     }
 
+    // Validar altura
+    const height = parseFloat(signupData.height);
+    if (height < 100 || height > 250) {
+      toast({
+        title: "Erro",
+        description: "Altura deve estar entre 100cm e 250cm",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar data de nascimento
+    const birthDate = new Date(signupData.birthDate);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    if (age < 13 || age > 120) {
+      toast({
+        title: "Erro",
+        description: "Idade deve estar entre 13 e 120 anos",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: signupData.email,
         password: signupData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: signupData.fullName,
+            phone: signupData.phone,
+            birth_date: signupData.birthDate,
+            gender: signupData.gender,
+            city: signupData.city,
+            height: height,
           },
         },
       });
@@ -126,9 +211,41 @@ const AuthPage = () => {
           variant: "destructive",
         });
       } else {
+        // Criar perfil completo na tabela user_profiles (tabela correta)
+        if (data.user) {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: data.user.id,
+              full_name: signupData.fullName,
+              phone: signupData.phone,
+              birth_date: signupData.birthDate,
+              city: signupData.city,
+            });
+
+          if (profileError) {
+            console.error('Erro ao criar perfil:', profileError);
+          }
+
+          // Criar dados físicos automaticamente
+          const { error: physicalError } = await supabase
+            .from('user_physical_data')
+            .insert({
+              user_id: data.user.id,
+              altura_cm: height,
+              idade: age,
+              sexo: signupData.gender === 'male' ? 'masculino' : 'feminino',
+              nivel_atividade: 'moderado'
+            });
+
+          if (physicalError) {
+            console.error('Erro ao criar dados físicos:', physicalError);
+          }
+        }
+
         toast({
-          title: "Conta criada!",
-          description: "Bem-vindo ao Instituto dos Sonhos",
+          title: "Conta criada com sucesso!",
+          description: "Bem-vindo ao Instituto dos Sonhos. Seus dados foram salvos.",
         });
         navigate("/dashboard");
       }
@@ -143,96 +260,9 @@ const AuthPage = () => {
     }
   };
 
-  const handleAdminAccess = async () => {
-    if (!adminData.email || !adminData.password) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha as credenciais de admin",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: adminData.email,
-        password: adminData.password,
-      });
 
-      if (error) {
-        toast({
-          title: "Acesso negado",
-          description: "Credenciais de administrador inválidas",
-          variant: "destructive",
-        });
-      } else {
-        // Note: In a real app, you'd check user roles from a database
-        // For now, we'll just redirect to admin dashboard
-        toast({
-          title: "Acesso administrativo concedido",
-          description: "Bem-vindo, administrador",
-        });
-        navigate("/admin");
-      }
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const createAdminAccount = async () => {
-    // This is a simplified admin creation - in production, this would be more secure
-    if (!adminData.email || !adminData.password) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha as credenciais de admin",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: adminData.email,
-        password: adminData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: "Administrador",
-            role: "admin",
-          },
-        },
-      });
-
-      if (error) {
-        toast({
-          title: "Erro ao criar admin",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Conta de admin criada!",
-          description: "Conta administrativa criada com sucesso",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -304,58 +334,162 @@ const AuthPage = () => {
                     disabled={isLoading}
                     className="w-full bg-instituto-blue hover:bg-instituto-blue/90"
                   >
-                    {isLoading ? "Entrando..." : "Entrar na minha conta"}
+                    {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
+
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Não tem uma conta?{" "}
+                      <Link to="/auth" className="text-primary hover:underline">
+                        Criar conta
+                      </Link>
+                    </p>
+                  </div>
                 </TabsContent>
 
                 {/* Signup Tab */}
                 <TabsContent value="signup" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome completo</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      value={signupData.fullName}
-                      onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
-                      required
-                    />
+                  {/* Dados Pessoais */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-primary font-medium">
+                      <User className="h-4 w-4" />
+                      <span>Dados Pessoais</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-name">Nome completo *</Label>
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="Seu nome completo"
+                          value={signupData.fullName}
+                          onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-phone" className="flex items-center gap-2">
+                          <Phone className="h-3 w-3" />
+                          Celular *
+                        </Label>
+                        <Input
+                          id="signup-phone"
+                          type="tel"
+                          placeholder="(11) 99999-9999"
+                          value={signupData.phone}
+                          onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">Email *</Label>
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={signupData.email}
+                          onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-birth" className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          Data de Nascimento *
+                        </Label>
+                        <Input
+                          id="signup-birth"
+                          type="date"
+                          value={signupData.birthDate}
+                          onChange={(e) => setSignupData({ ...signupData, birthDate: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-gender">Gênero *</Label>
+                        <Select value={signupData.gender} onValueChange={(value) => setSignupData({ ...signupData, gender: value })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione seu gênero" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Masculino</SelectItem>
+                            <SelectItem value="female">Feminino</SelectItem>
+                            <SelectItem value="other">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-city" className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3" />
+                          Cidade *
+                        </Label>
+                        <Input
+                          id="signup-city"
+                          type="text"
+                          placeholder="Sua cidade"
+                          value={signupData.city}
+                          onChange={(e) => setSignupData({ ...signupData, city: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-height" className="flex items-center gap-2">
+                          <Ruler className="h-3 w-3" />
+                          Altura (cm) *
+                        </Label>
+                        <Input
+                          id="signup-height"
+                          type="number"
+                          placeholder="175"
+                          min="100"
+                          max="250"
+                          value={signupData.height}
+                          onChange={(e) => setSignupData({ ...signupData, height: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={signupData.email}
-                      onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Escolha uma senha"
-                      value={signupData.password}
-                      onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                      required
-                    />
-                  </div>
+                  {/* Segurança */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-primary font-medium">
+                      <Heart className="h-4 w-4" />
+                      <span>Segurança</span>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirmar senha</Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      placeholder="Confirme sua senha"
-                      value={signupData.confirmPassword}
-                      onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
-                      required
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">Senha *</Label>
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="Crie uma senha forte"
+                          value={signupData.password}
+                          onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirmar senha *</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="Confirme sua senha"
+                          value={signupData.confirmPassword}
+                          onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -377,55 +511,6 @@ const AuthPage = () => {
                 </TabsContent>
               </Tabs>
             </CardHeader>
-          </Card>
-
-          {/* Admin Access Section */}
-          <Card className="health-card mt-6">
-            <CardHeader>
-              <CardTitle className="text-center text-lg">Acesso Administrativo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="admin-email">Email do Admin</Label>
-                <Input
-                  id="admin-email"
-                  type="email"
-                  placeholder="admin@institutodossonhos.com"
-                  value={adminData.email}
-                  onChange={(e) => setAdminData({ ...adminData, email: e.target.value })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="admin-password">Senha do Admin</Label>
-                <Input
-                  id="admin-password"
-                  type="password"
-                  placeholder="Senha administrativa"
-                  value={adminData.password}
-                  onChange={(e) => setAdminData({ ...adminData, password: e.target.value })}
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleAdminAccess}
-                  disabled={isLoading}
-                  className="flex-1 bg-instituto-red hover:bg-instituto-red/90"
-                >
-                  Acesso Administrativo
-                </Button>
-                
-                <Button 
-                  onClick={createAdminAccount}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="flex-1 bg-instituto-gray hover:bg-instituto-gray/90 text-white border-instituto-gray"
-                >
-                  Criar Admin
-                </Button>
-              </div>
-            </CardContent>
           </Card>
 
           {/* Testimonial */}
