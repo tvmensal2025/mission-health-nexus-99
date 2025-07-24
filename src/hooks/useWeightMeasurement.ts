@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCompleteUserData, CompleteUserMeasurement } from './useCompleteUserData';
 
 export interface WeightMeasurement {
   id: string;
@@ -54,6 +55,7 @@ export const useWeightMeasurement = () => {
   const [error, setError] = useState<string | null>(null);
   const [dataFreshness, setDataFreshness] = useState<Date>(new Date());
   const { toast } = useToast();
+  const { saveCompleteUserData } = useCompleteUserData();
 
   // Buscar dados físicos do usuário com cache
   const fetchPhysicalData = useCallback(async () => {
@@ -330,6 +332,26 @@ export const useWeightMeasurement = () => {
     fetchWeeklyAnalysis();
   }, [fetchPhysicalData, fetchMeasurements, fetchWeeklyAnalysis]);
 
+  // Função para salvar dados completos em TODAS as tabelas
+  const saveCompleteData = async (completeData: CompleteUserMeasurement) => {
+    try {
+      console.log('🚀 Iniciando salvamento completo com todos os dados:', completeData);
+      
+      // Usar o hook de dados completos para salvar tudo
+      const result = await saveCompleteUserData(completeData);
+      
+      // Atualizar estados locais após salvamento bem-sucedido
+      await fetchPhysicalData();
+      await fetchMeasurements(30, true); // Force refresh
+      await fetchWeeklyAnalysis();
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Erro no salvamento completo:', error);
+      throw error;
+    }
+  };
+
   return {
     measurements,
     physicalData,
@@ -339,6 +361,7 @@ export const useWeightMeasurement = () => {
     stats,
     saveMeasurement,
     savePhysicalData,
+    saveCompleteData, // 🆕 Nova função para salvar TODOS os dados
     fetchMeasurements,
     fetchPhysicalData,
     fetchWeeklyAnalysis
