@@ -24,6 +24,7 @@ export type Database = {
           next_week_goals: string | null
           satisfaction_rating: number | null
           user_id: string
+          user_name: string | null
           week_start_date: string
           weight_change: number | null
         }
@@ -36,6 +37,7 @@ export type Database = {
           next_week_goals?: string | null
           satisfaction_rating?: number | null
           user_id: string
+          user_name?: string | null
           week_start_date: string
           weight_change?: number | null
         }
@@ -48,6 +50,7 @@ export type Database = {
           next_week_goals?: string | null
           satisfaction_rating?: number | null
           user_id?: string
+          user_name?: string | null
           week_start_date?: string
           weight_change?: number | null
         }
@@ -147,6 +150,7 @@ export type Database = {
           notes: string | null
           sleep_hours: number | null
           user_id: string
+          user_name: string | null
           water_intake: number | null
         }
         Insert: {
@@ -159,6 +163,7 @@ export type Database = {
           notes?: string | null
           sleep_hours?: number | null
           user_id: string
+          user_name?: string | null
           water_intake?: number | null
         }
         Update: {
@@ -171,6 +176,7 @@ export type Database = {
           notes?: string | null
           sleep_hours?: number | null
           user_id?: string
+          user_name?: string | null
           water_intake?: number | null
         }
         Relationships: []
@@ -311,6 +317,7 @@ export type Database = {
           peso_meta_kg: number | null
           status: string | null
           user_id: string | null
+          user_name: string | null
         }
         Insert: {
           created_at?: string | null
@@ -322,6 +329,7 @@ export type Database = {
           peso_meta_kg?: number | null
           status?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Update: {
           created_at?: string | null
@@ -333,6 +341,7 @@ export type Database = {
           peso_meta_kg?: number | null
           status?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Relationships: []
       }
@@ -344,6 +353,7 @@ export type Database = {
           is_completed: boolean | null
           mission_id: string
           user_id: string
+          user_name: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -352,6 +362,7 @@ export type Database = {
           is_completed?: boolean | null
           mission_id: string
           user_id: string
+          user_name?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -360,6 +371,7 @@ export type Database = {
           is_completed?: boolean | null
           mission_id?: string
           user_id?: string
+          user_name?: string | null
         }
         Relationships: [
           {
@@ -381,6 +393,7 @@ export type Database = {
           sexo: string
           updated_at: string | null
           user_id: string | null
+          user_name: string | null
         }
         Insert: {
           altura_cm: number
@@ -391,6 +404,7 @@ export type Database = {
           sexo: string
           updated_at?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Update: {
           altura_cm?: number
@@ -401,11 +415,13 @@ export type Database = {
           sexo?: string
           updated_at?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Relationships: []
       }
       user_profiles: {
         Row: {
+          abdominal_perimeter_cm: number | null
           achievements: string[] | null
           avatar_url: string | null
           bio: string | null
@@ -413,7 +429,9 @@ export type Database = {
           city: string | null
           created_at: string | null
           full_name: string | null
+          gender: string | null
           goals: string[] | null
+          height_cm: number | null
           id: string
           phone: string | null
           state: string | null
@@ -421,6 +439,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          abdominal_perimeter_cm?: number | null
           achievements?: string[] | null
           avatar_url?: string | null
           bio?: string | null
@@ -428,7 +447,9 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           full_name?: string | null
+          gender?: string | null
           goals?: string[] | null
+          height_cm?: number | null
           id?: string
           phone?: string | null
           state?: string | null
@@ -436,6 +457,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          abdominal_perimeter_cm?: number | null
           achievements?: string[] | null
           avatar_url?: string | null
           bio?: string | null
@@ -443,7 +465,9 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           full_name?: string | null
+          gender?: string | null
           goals?: string[] | null
+          height_cm?: number | null
           id?: string
           phone?: string | null
           state?: string | null
@@ -459,6 +483,7 @@ export type Database = {
           is_completed: boolean | null
           lesson_id: string
           user_id: string
+          user_name: string | null
           watch_time_seconds: number | null
         }
         Insert: {
@@ -467,6 +492,7 @@ export type Database = {
           is_completed?: boolean | null
           lesson_id: string
           user_id: string
+          user_name?: string | null
           watch_time_seconds?: number | null
         }
         Update: {
@@ -475,6 +501,7 @@ export type Database = {
           is_completed?: boolean | null
           lesson_id?: string
           user_id?: string
+          user_name?: string | null
           watch_time_seconds?: number | null
         }
         Relationships: [
@@ -499,6 +526,7 @@ export type Database = {
           semana_inicio: string
           tendencia: string | null
           user_id: string | null
+          user_name: string | null
           variacao_gordura_corporal: number | null
           variacao_massa_muscular: number | null
           variacao_peso: number | null
@@ -514,6 +542,7 @@ export type Database = {
           semana_inicio: string
           tendencia?: string | null
           user_id?: string | null
+          user_name?: string | null
           variacao_gordura_corporal?: number | null
           variacao_massa_muscular?: number | null
           variacao_peso?: number | null
@@ -529,6 +558,7 @@ export type Database = {
           semana_inicio?: string
           tendencia?: string | null
           user_id?: string | null
+          user_name?: string | null
           variacao_gordura_corporal?: number | null
           variacao_massa_muscular?: number | null
           variacao_peso?: number | null
@@ -548,6 +578,7 @@ export type Database = {
           metabolic_age: number | null
           muscle_mass: number | null
           user_id: string
+          user_name: string | null
           weight: number
         }
         Insert: {
@@ -562,6 +593,7 @@ export type Database = {
           metabolic_age?: number | null
           muscle_mass?: number | null
           user_id: string
+          user_name?: string | null
           weight: number
         }
         Update: {
@@ -576,6 +608,7 @@ export type Database = {
           metabolic_age?: number | null
           muscle_mass?: number | null
           user_id?: string
+          user_name?: string | null
           weight?: number
         }
         Relationships: []
@@ -601,6 +634,7 @@ export type Database = {
           peso_kg: number
           risco_metabolico: string | null
           user_id: string | null
+          user_name: string | null
         }
         Insert: {
           agua_corporal_percent?: number | null
@@ -622,6 +656,7 @@ export type Database = {
           peso_kg: number
           risco_metabolico?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Update: {
           agua_corporal_percent?: number | null
@@ -643,6 +678,7 @@ export type Database = {
           peso_kg?: number
           risco_metabolico?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Relationships: []
       }
@@ -651,7 +687,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_display_name: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
