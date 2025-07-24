@@ -85,18 +85,24 @@ export const XiaomiScaleButton: React.FC = () => {
     return 'bluetooth' in navigator;
   };
 
-  // Simular dados da balança
-  const generateScaleData = (): ScaleData => ({
-    weight: 70.5,
-    bmi: 22.4,
-    bodyFat: 18.2,
-    muscleMass: 32.1,
-    waterPercentage: 58.3,
-    boneMass: 3.5,
-    visceralFat: 8.5,
-    metabolicAge: 35,
-    timestamp: new Date()
-  });
+  // Simular dados da balança com valores aleatórios realistas
+  const generateScaleData = (): ScaleData => {
+    const weight = Math.round((Math.random() * (120 - 50) + 50) * 10) / 10; // Entre 50-120kg
+    const height = 1.70; // Altura padrão para cálculo do IMC
+    const bmi = Math.round((weight / (height * height)) * 10) / 10;
+    
+    return {
+      weight,
+      bmi,
+      bodyFat: Math.round((Math.random() * (30 - 10) + 10) * 10) / 10, // 10-30%
+      muscleMass: Math.round((weight * (Math.random() * (0.5 - 0.3) + 0.3)) * 10) / 10, // 30-50% do peso
+      waterPercentage: Math.round((Math.random() * (65 - 50) + 50) * 10) / 10, // 50-65%
+      boneMass: Math.round((weight * (Math.random() * (0.06 - 0.04) + 0.04)) * 10) / 10, // 4-6% do peso
+      visceralFat: Math.round(Math.random() * (15 - 5) + 5), // 5-15
+      metabolicAge: Math.round(Math.random() * (50 - 25) + 25), // 25-50 anos
+      timestamp: new Date()
+    };
+  };
 
   // Buscar dispositivos Bluetooth reais
   const searchBluetoothDevices = async () => {
@@ -665,17 +671,17 @@ export const XiaomiScaleButton: React.FC = () => {
             <h2 className="text-2xl font-bold">Gráficos Atualizados</h2>
             
             <div className="grid grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl mb-2">⚖️</div>
-                  <div className="text-lg font-bold">PESO</div>
-                  <div className="text-2xl font-bold text-primary">70.5 kg</div>
-                  <div className="flex items-center justify-center gap-1 text-green-500">
-                    <TrendingDown className="h-4 w-4" />
-                    <span className="text-sm">-2.3</span>
-                  </div>
-                </CardContent>
-              </Card>
+               <Card>
+                 <CardContent className="p-4 text-center">
+                   <div className="text-2xl mb-2">⚖️</div>
+                   <div className="text-lg font-bold">PESO</div>
+                   <div className="text-2xl font-bold text-primary">{scaleData?.weight || 0} kg</div>
+                   <div className="flex items-center justify-center gap-1 text-green-500">
+                     <TrendingDown className="h-4 w-4" />
+                     <span className="text-sm">-2.3</span>
+                   </div>
+                 </CardContent>
+               </Card>
               
               <Card>
                 <CardContent className="p-4 text-center">
